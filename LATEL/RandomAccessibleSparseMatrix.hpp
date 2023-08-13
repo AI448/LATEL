@@ -3,7 +3,7 @@
 
 
 #include "ACCBOOST2/container.hpp"
-#include "foundations.hpp"
+#include "common.hpp"
 #include "MatixRangePolicy.hpp"
 #include "VectorView.hpp"
 
@@ -12,18 +12,20 @@ namespace LATEL
 {
 
 
-  template<class IndexT, class ValueT>
-  class RandomAccessibleSparseMatrix: public RowMatrixRangePolicy<RandomAccessibleSparseMatrix<IndexT, ValueT>>
+  template<class IndexType, class ValueType>
+  class RandomAccessibleSparseMatrix: public RowMatrixRangePolicy<RandomAccessibleSparseMatrix<IndexType, ValueType>>
   {
   public:
 
-    using index_type = IndexT;
+    using matrix_category = LATEL::bidirectional_matrix_tag;
 
-    using value_type = ValueT;
+    using index_type = IndexType;
+
+    using value_type = ValueType;
 
   private:
 
-    static inline const value_type _zero = value_type(0);
+    static inline constexpr value_type _zero = 0;
 
     ACCBOOST2::Sparse2DArray<value_type> _sparse_2d_array; // TODO index_type 追加
 
@@ -33,18 +35,20 @@ namespace LATEL
     RandomAccessibleSparseMatrix(RandomAccessibleSparseMatrix&&) = default;
     RandomAccessibleSparseMatrix(const RandomAccessibleSparseMatrix&) = default;
 
-    template<std::integral I, std::integral J>
-    RandomAccessibleSparseMatrix(const I& row_dimension, const J& column_dimension):
+    RandomAccessibleSparseMatrix(const std::integral auto& row_dimension, const std::integral auto& column_dimension):
       _sparse_2d_array(row_dimension, column_dimension)
     {
       assert(row_dimension <= std::numeric_limits<index_type>::max());
       assert(column_dimension <= std::numeric_limits<index_type>::max());
     }
 
-    template<axis_type axis>
+    RandomAccessibleSparseMatrix& operator=(RandomAccessibleSparseMatrix&&) = default;
+    RandomAccessibleSparseMatrix& operator=(const RandomAccessibleSparseMatrix&) = default;
+
+    template<Axis A>
     decltype(auto) dimension() const noexcept
     {
-      if constexpr (axis == 0){
+      if constexpr (A == Axis::ROW){
         return _sparse_2d_array.row_size();
       }else{
         return _sparse_2d_array.column_size();
@@ -63,11 +67,12 @@ namespace LATEL
 
   private:
 
-    template<axis_type axis>
+    template<Axis A>
     class Vector
     {
     public:
 
+      using vector_category = LATEL::eager_evaluation_vector_tag;
       using index_type = RandomAccessibleSparseMatrix::index_type;
       using value_type = RandomAccessibleSparseMatrix::value_type;
 
@@ -78,9 +83,13 @@ namespace LATEL
 
     public:
 
+      Vector(const RandomAccessibleSparseMatrix& matrix, const std::integral auto& index):
+        _matrix(matrix), _index(index)
+      {}
+
       decltype(auto) dimension() const noexcept
       {
-        if constexpr (axis == ROW){
+        if constexpr (A == Axis::ROW){
           return _matrix._sparse_2d_array.row_size();
         }else{
           return _matrix._sparse_2d_array.column_size();
@@ -89,52 +98,35 @@ namespace LATEL
 
       decltype(auto) size() const noexcept
       {
-        if constexpr (axis == ROW){
+        if constexpr (A == Axis::ROW){
           return _matrix._sparse_2d_array.row(_index).size();
         }else{
           return _matrix._sparse_2d_array.column(_index).size();
         }
       }
 
-      Vector(const RandomAccessibleSparseMatrix& matrix, const index_type& index):
-        _matrix(matrix), _index(index)
-      {}
-
     private:
 
       template<class IteratorT>
       static decltype(auto) make_iterator(IteratorT&& iterator)
       {
-        if constexpr (axis == ROW){
-          return ACCBOOST2::make_map_iterator(
-            [](auto&& trio)
-            {
-              return ACCBOOST2::capture_as_tuple(
-                ACCBOOST2::get<1>(std::forward<decltype(trio)>(trio)),
-                ACCBOOST2::get<2>(std::forward<decltype(trio)>(trio))
-              );
-            },
-            std::forward<IteratorT>(iterator)
-          );
-        }else{
-          return ACCBOOST2::make_map_iterator(
-            [](auto&& trio)
-            {
-              return ACCBOOST2::capture_as_tuple(
-                ACCBOOST2::get<0>(std::forward<decltype(trio)>(trio)),
-                ACCBOOST2::get<2>(std::forward<decltype(trio)>(trio))
-              );
-            },
-            std::forward<IteratorT>(iterator)
-          );
-        }
+        return ACCBOOST2::make_map_iterator(
+          [](auto&& trio) -> decltype(auto)
+          {
+            return ACCBOOST2::capture_as_tuple(
+              ACCBOOST2::get<1 - A>(std::forward<decltype(trio)>(trio)),
+              ACCBOOST2::get<2>(std::forward<decltype(trio)>(trio))
+            );
+          },
+          std::forward<IteratorT>(iterator)
+        );
       }
 
     public:
 
       decltype(auto) begin() const noexcept
       {
-        if constexpr (axis == ROW){
+        if constexpr (A == ROW){
           return make_iterator(_matrix._sparse_2d_array.row(_index).begin());
         }else{
           return make_iterator(_matrix._sparse_2d_array.column(_index).begin());
@@ -143,7 +135,7 @@ namespace LATEL
 
       decltype(auto) end() const noexcept
       {
-        if constexpr (axis == ROW){
+        if constexpr (A == ROW){
           return make_iterator(_matrix._sparse_2d_array.row(_index).end());
         }else{
           return make_iterator(_matrix._sparse_2d_array.column(_index).end());
@@ -156,12 +148,12 @@ namespace LATEL
 
     decltype(auto) row(const std::size_t& row_index) const noexcept
     {
-      return Vector<ROW>(*this, row_index);
+      return Vector<Axis::ROW>(*this, row_index);
     }
 
     decltype(auto) column(const std::size_t& column_index) const noexcept
     {
-      return Vector<COLUMN>(*this, column_index);
+      return Vector<Axis::COLUMN>(*this, column_index);
     }
 
     // template<std::integral I>
@@ -192,12 +184,13 @@ namespace LATEL
       friend class RandomAccessibleSparseMatrix;
 
     private:
+
       // TODO Sparse2DArray の方をプロキシを使った実装にして，プロキシのプロキシにする
       RandomAccessibleSparseMatrix& _matrix;
-      std::size_t _row_index;
-      std::size_t _column_index;
+      index_type _row_index;
+      index_type _column_index;
 
-      Proxy(RandomAccessibleSparseMatrix& matrix, const std::size_t& row_index, const std::size_t& column_index) noexcept:
+      Proxy(RandomAccessibleSparseMatrix& matrix, const std::integral auto& row_index, const std::integral auto& column_index) noexcept:
         _matrix(matrix), _row_index(row_index), _column_index(column_index)
       {}
 
@@ -243,18 +236,19 @@ namespace LATEL
 
   public:
 
-    decltype(auto) operator[](const std::array<std::size_t, 2>& index_pair) const noexcept
+    template<std::integral I, std::integral J>
+    decltype(auto) operator[](const std::tuple<I, J>& index_pair) const noexcept
     {
-      return _sparse_2d_array.get(index_pair[0], index_pair[1], _zero);
+      return _sparse_2d_array.get(std::get<0>(index_pair[0]), std::get<1>(index_pair[1]), _zero);
     }
 
-    decltype(auto) operator[](const std::array<std::size_t, 2>& index_pair) noexcept
+    template<std::integral I, std::integral J>
+    decltype(auto) operator[](const std::tuple<I, J>& index_pair) noexcept
     {
-      return Proxy(*this, index_pair[0], index_pair[1]);
+      return Proxy(*this, std::get<0>(index_pair[0]), std::get<1>(index_pair[1]));
     }
 
-    template<matrix_concept MatrixT>
-    explicit RandomAccessibleSparseMatrix(const MatrixT& matrix):
+    explicit RandomAccessibleSparseMatrix(const LATEL::eager_evaluation_matrix_concept auto& matrix):
       _sparse_2d_array(matrix.row_dimension(), matrix.column_dimension())
     {
       for(auto&& [i, j, a]: matrix){

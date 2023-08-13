@@ -16,6 +16,8 @@ int main()
     }
   }
 
+  static_assert(bidirectional_matrix_concept<CompressedMatrix<std::uint32_t, double>>);
+
   CompressedMatrix<std::uint32_t, double> matrix(
     make_MatrixView(3, 3, data)
   );

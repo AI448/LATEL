@@ -2,30 +2,44 @@
 #define LATEL_TRANSPOSEDMATRIXVIEW_HPP_
 
 
-#include "foundations.hpp"
+#include "common.hpp"
 
 
 namespace LATEL
 {
 
 
-template<class MatrixT>
+template<class MatrixType>
 class TransposedMatrixView
 {
 public:
 
-  using index_type = std::remove_reference_t<MatrixT>::index_type;
+  using matrix_category = std::conditional_t<
+    LATEL::bidirectional_matrix_concept<MatrixType>,
+    LATEL::bidirectional_matrix_tag,
+    std::conditional_t<
+      LATEL::row_matrix_concept<MatrixType>,
+      LATEL::column_matrix_tag,
+      std::conditional_t<
+        LATEL::column_matrix_concept<MatrixType>,
+        LATEL::row_matrix_tag,
+        LATEL::eager_evaluation_matrix_tag
+      >
+    >
+  >;
 
-  using value_type = std::remove_reference_t<MatrixT>::value_type;
+  using index_type = std::remove_reference_t<MatrixType>::index_type;
+
+  using value_type = std::remove_reference_t<MatrixType>::value_type;
 
 private:
 
-  MatrixT _matrix;
+  MatrixType _matrix;
 
 public:
 
-  explicit TransposedMatrixView(MatrixT&& matrix):
-    _matrix(std::forward<MatrixT>(matrix))
+  explicit TransposedMatrixView(MatrixType&& matrix):
+    _matrix(std::forward<MatrixType>(matrix))
   {}
 
   decltype(auto) row_dimension() const noexcept
@@ -38,16 +52,12 @@ public:
     return _matrix.row_dimension();
   }
 
-  template<std::integral I, class X = MatrixT>
-  auto row(const I& row_index) const noexcept -> decltype(std::declval<const X&>().column(row_index))
-//  decltype(auto) row(const I& row_index) const noexcept
+  auto row(const std::integral auto& row_index) const noexcept requires(LATEL::column_matrix_concept<MatrixType>)
   {
     return _matrix.column(row_index);
   }
 
-  template<std::integral I, class X = MatrixT>
-  auto column(const I& column_index) const noexcept -> decltype(std::declval<const X&>().row(column_index))
-//  auto column(const I& column_index) const noexcept -> decltype(std::declval<const MatrixT&>().row(column_index))
+  auto column(const std::integral auto& column_index) const noexcept requires(LATEL::row_matrix_concept<MatrixType>)
   {
     return _matrix.row(column_index);
   }
@@ -85,10 +95,10 @@ public:
 };
 
 
-template<matrix_concept MatrixT>
-decltype(auto) transpose(MatrixT&& matrix) noexcept
+template<eager_evaluation_matrix_concept MatrixType>
+decltype(auto) transpose(MatrixType&& matrix) noexcept
 {
-  return TransposedMatrixView<MatrixT>(std::forward<MatrixT>(matrix));
+  return TransposedMatrixView<MatrixType>(std::forward<MatrixType>(matrix));
 }
 
 

@@ -2,33 +2,37 @@
 #define LATEL_MATRIXVIEW_HPP_
 
 
-#include "foundations.hpp"
+#include "common.hpp"
 
 
 namespace LATEL
 {
 
 
-template<class RangeT>
+template<class RangeType>
 class MatrixView
 {
 public:
 
-  using index_type = std::size_t;
+  using matrix_category = LATEL::eager_evaluation_matrix_tag;
 
-  using value_type = decltype(ACCBOOST2::get<2>(*(std::declval<const RangeT&>().begin())));
+  using index_type = std::common_type_t<
+    std::remove_cv_t<std::remove_reference_t<std::tuple_element_t<0, std::remove_reference_t<std::ranges::range_reference_t<RangeType>>>>>,
+    std::remove_cv_t<std::remove_reference_t<std::tuple_element_t<1, std::remove_reference_t<std::ranges::range_reference_t<RangeType>>>>>
+  >;
+
+  using value_type = std::remove_cv_t<std::remove_reference_t<std::tuple_element_t<2, std::remove_reference_t<std::ranges::range_reference_t<RangeType>>>>>;
 
 private:
 
   index_type _row_dimension;
   index_type _column_dimension;
-  RangeT _range;
+  RangeType _range;
 
 public:
 
-  template<std::integral I, std::integral J>
-  MatrixView(const I& row_dimension, const J& column_dimension, RangeT&& range):
-    _row_dimension(row_dimension), _column_dimension(column_dimension), _range(std::forward<RangeT>(range))
+  MatrixView(const std::integral auto& row_dimension, const std::integral auto& column_dimension, RangeType&& range):
+    _row_dimension(row_dimension), _column_dimension(column_dimension), _range(std::forward<RangeType>(range))
   {}
 
   decltype(auto) row_dimension() const noexcept
@@ -54,10 +58,10 @@ public:
 };
 
 
-template<std::integral I, std::integral J, class RangeT>
-decltype(auto) make_MatrixView(const I& row_dimension, const J& column_dimension, RangeT&& range)
+template<class RangeType>
+decltype(auto) make_MatrixView(const std::integral auto& row_dimension, const std::integral auto& column_dimension, RangeType&& range)
 {
-  return MatrixView<RangeT>(row_dimension, column_dimension, std::forward<RangeT>(range));
+  return MatrixView<RangeType>(row_dimension, column_dimension, std::forward<RangeType>(range));
 }
 
 

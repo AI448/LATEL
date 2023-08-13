@@ -1,10 +1,10 @@
-TESTS=test_SparseVector test_DenseVector test_CompressedMatrix
+TESTS=test_SparseVector test_DenseVector test_CoordinateMatrix test_CompressedMatrix test_BlockMatrix test_ScalarVectorProduction test_RandomAccessibleSparseMatrix
 
 RESULTS=$(patsubst %, %.result, $(TESTS))
 OUTS=$(patsubst %, %.out, $(TESTS))
 DEPENDS=$(patsubst %, %.d, $(TESTS))
 
-CXXFLAGS=-std=c++20 -W -Wall -g -O2 -I../../ACCBOOST2 -I../LATEL
+CXXFLAGS=-std=c++20 -W -Wall -fconcepts-diagnostics-depth=10 -g -O0 -I../../ACCBOOST2 -I../LATEL
 
 
 all: $(RESULTS)

@@ -3,21 +3,23 @@
 
 
 #include "ACCBOOST2/container.hpp"
-#include "foundations.hpp"
+#include "common.hpp"
 
 
 namespace LATEL
 {
 
 
-template<class IndexT, class ValueT>
+template<class IndexType, class ValueType>
 class CoordinateMatrix
 {
 public:
 
-  using index_type = IndexT;
+  using matrix_category = LATEL::eager_evaluation_matrix_tag;
 
-  using value_type = ValueT;
+  using index_type = IndexType;
+
+  using value_type = ValueType;
 
 private:
 
@@ -37,7 +39,6 @@ public:
 
   CoordinateMatrix(CoordinateMatrix&&) = default;
   CoordinateMatrix(const CoordinateMatrix&) = default;
-
   CoordinateMatrix& operator=(CoordinateMatrix&&) = default;
   CoordinateMatrix& operator=(const CoordinateMatrix&) = default;
 
@@ -93,12 +94,11 @@ public:
     _data.clear();
   }
 
-  template<matrix_concept MatrixT>
-  explicit CoordinateMatrix(const MatrixT& matrix):
+  explicit CoordinateMatrix(const eager_evaluation_matrix_concept auto& matrix):
     _m(matrix.row_dimension()), _n(matrix.column_dimension()), _data(matrix)
   {
-/*
-    if constexpr (ACCBOOST2::is_random_access_range<const MatrixT&>){
+
+    if constexpr (std::ranges::random_access_range<decltype(matrix)>){
       _data.reserve(std::size(matrix));
       for(auto&& [i, j, v]: matrix){
         assert(std::size_t(i) < _m);
@@ -120,11 +120,10 @@ public:
         );
       }
     }
-*/    
+
   }
 
-  template<matrix_concept MatrixT>
-  CoordinateMatrix& operator=(const MatrixT& matrix)
+  CoordinateMatrix& operator=(const eager_evaluation_matrix_concept auto& matrix)
   {
     _m = matrix.row_dimension();
     _n = matrix.column_dimension();

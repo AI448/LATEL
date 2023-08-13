@@ -2,7 +2,7 @@
 #define LATEL_TRANSPOSEDPERMUTATORVIEW_HPP_
 
 
-#include "foundations.hpp"
+#include "LATEL_common.hpp"
 
 
 namespace LATEL

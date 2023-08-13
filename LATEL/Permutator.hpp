@@ -3,20 +3,22 @@
 
 
 #include "ACCBOOST2/container.hpp"
-#include "foundations.hpp"
+#include "LATEL_common.hpp"
 
 
 namespace LATEL
 {
 
-template<class IndexT>
+template<class IndexType>
 class Permutator
 {
 public:
 
-  using index_type = IndexT;
+  using index_type = IndexType;
 
 private:
+
+  static constexpr index_type _null_index = std::numeric_limits<index_type>::max();
 
   ACCBOOST2::Array<index_type> _permutation;
   ACCBOOST2::Array<index_type> _unpermutation;
@@ -27,16 +29,10 @@ public:
   Permutator(Permutator&&) = default;
   Permutator(const Permutator&) = default;
 
-  template<std::integral D>
-  explicit Permutator(const D& m):
-    _permutation(m), _unpermutation(m)
+  explicit Permutator(const index_type& m, const index_type& n):
+    _permutation(), _unpermutation()
   {
-    assert(m <= std::numeric_limits<index_type>::max());
-
-    for(auto&& i: ACCBOOST2::range(m)){
-      _permutation[i] = i;
-      _unpermutation[i] = i;
-    }
+    reset(m, n);
   }
 
   template<permutator_concept PermutatorT>  
@@ -47,6 +43,10 @@ public:
       set(i, p.permutate(i));
     }
   }
+
+  Permutator& operator=(Permutator&&) = default;
+
+  Permutator& operator=(const Permutator&) = default;
 
   decltype(auto) row_dimension() const noexcept
   {
@@ -81,8 +81,36 @@ public:
     index_type f = _unpermutation[to];
     _permutation[from] = to;
     _unpermutation[to] = from;
-    _permutation[f] = t;
-    _unpermutation[t] = f;
+    if(f != _null_index){
+      _permutation[f] = t;
+    }
+    if(t != _null_index){
+      _unpermutation[t] = f;
+    }
+  }
+
+  void reset(const index_type& m, const index_type& n)
+  {
+    try{
+      _permutation.resize(n);    
+      for(auto&& i: ACCBOOST2::range(std::min(m, n))){
+        _permutation[i] = i;
+      }
+      for(auto&& i: ACCBOOST2::range(std::min(m, n), n)){
+        _permutation[i] = _null_index;
+      }
+      _unpermutation.resize(m);
+      for(auto&& i: ACCBOOST2::range(std::min(m, n))){
+        _unpermutation[i] = i;
+      }
+      for(auto&& i: ACCBOOST2::range(std::min(m, n), m)){
+        _unpermutation[i] = _null_index;
+      }
+    }catch(...){
+      _permutation.clear();
+      _unpermutation.clear();
+      throw;
+    }
   }
 
   decltype(auto) begin() const noexcept

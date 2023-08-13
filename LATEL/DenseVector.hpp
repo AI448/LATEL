@@ -3,21 +3,25 @@
 
 
 #include "ACCBOOST2/container.hpp"
-#include "foundations.hpp"
+#include "common.hpp"
 
 
 namespace LATEL
 {
 
 
-template<class IndexT, class ValueT>
+template<class IndexType, class ValueType>
 class DenseVector
 {
+  static_assert(std::integral<IndexType>);
+
 public:
 
-  using index_type = IndexT;
+  using vector_category = random_access_vector_tag;
 
-  using value_type = ValueT;
+  using index_type = IndexType;
+
+  using value_type = ValueType;
 
 private:
 
@@ -29,8 +33,7 @@ public:
   DenseVector(DenseVector&&) = default;
   DenseVector(const DenseVector&) = default;
 
-  template<std::integral I>
-  explicit DenseVector(const I& dimension, const value_type& initial_value = value_type(0)):
+  explicit DenseVector(const std::integral auto& dimension, const value_type& initial_value = value_type(0)):
     _values(dimension, initial_value)
   {
     assert(dimension <= std::numeric_limits<index_type>::max());
@@ -39,35 +42,36 @@ public:
   DenseVector& operator=(DenseVector&&) = default;
   DenseVector& operator=(const DenseVector&) = default;
 
-  index_type dimension() const noexcept
+  decltype(auto) dimension() const noexcept
   {
     return _values.size();
   }
 
-  template<std::integral I>
-  void clear(const I& dimension)
+  decltype(auto) size() const noexcept
+  {
+    return _values.size();
+  }
+
+  void clear(const std::integral auto& dimension)
   {
     assert(dimension <= std::numeric_limits<index_type>::max());
     _values.clear();
     _values.resize(dimension, value_type(0));
   }
 
-  template<std::integral I>
-  decltype(auto) operator[](const I& index) const noexcept
+  decltype(auto) operator[](const std::integral auto& index) const noexcept
   {
     return _values[index];
   }
 
-  template<std::integral I>
-  decltype(auto) operator[](const I& index) noexcept
+  decltype(auto) operator[](const std::integral auto& index) noexcept
   {
     return _values[index];
   }
 
 private:
 
-  template<class ValueArrayT>
-  static decltype(auto) make_iterator(ValueArrayT&& values, const std::size_t& index) noexcept
+  static decltype(auto) make_iterator(auto&& values, const std::integral auto& index) noexcept
   {
     return ACCBOOST2::make_random_access_enumerate_iterator(index, values.begin() + index);
   }
@@ -94,13 +98,7 @@ public:
     return make_iterator(_values, _values.size());
   }
 
-  decltype(auto) size() const noexcept
-  {
-    return _values.size();
-  }
-
-  template<vector_concept VectorT>
-  explicit DenseVector(const VectorT& vector):
+  explicit DenseVector(const eager_evaluation_vector_concept auto& vector):
     DenseVector(vector.dimension())
   {
     for(auto&& [i, x]: vector){
@@ -108,8 +106,7 @@ public:
     }
   }
 
-  template<vector_concept VectorT>
-  DenseVector& operator=(const VectorT& vector)
+  DenseVector& operator=(const eager_evaluation_vector_concept auto& vector)
   {
     clear(vector.dimension());
     for(auto&& [i, x]: vector){
@@ -118,8 +115,7 @@ public:
     return *this;
   }
 
-  template<vector_concept VectorT>
-  DenseVector& operator+=(const VectorT& vector)
+  DenseVector& operator+=(const eager_evaluation_vector_concept auto& vector)
   {
     for(auto&& [i, x]: vector){
       _values[i] += x;
@@ -127,8 +123,7 @@ public:
     return *this;
   }
 
-  template<vector_concept VectorT>
-  DenseVector& operator-=(const VectorT& vector)
+  DenseVector& operator-=(const eager_evaluation_vector_concept auto& vector)
   {
     for(auto&& [i, x]: vector){
       _values[i] -= x;
@@ -136,8 +131,7 @@ public:
     return *this;
   }
 
-  template<class T>
-  DenseVector& operator*=(const T& scalar)
+  DenseVector& operator*=(const std::convertible_to<value_type> auto& scalar)
   {
     for(auto& x: _values){
       x *= scalar;
@@ -145,15 +139,13 @@ public:
     return *this;
   }
 
-  template<class T>
-  DenseVector& operator/=(const T& scalar)
+  DenseVector& operator/=(const std::convertible_to<value_type> auto&& scalar)
   {
     for(auto& x: _values){
       x /= scalar;
     }
     return *this;
   }
-
 
 };
 

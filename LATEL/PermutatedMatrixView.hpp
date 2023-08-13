@@ -2,14 +2,14 @@
 #define LATEL_PERMUTATORMATRIXVIEW_HPP_
 
 
-#include "foundations.hpp"
+#include "LATEL_common.hpp"
 
 
 namespace LATEL
 {
 
 
-template<class PermutatorT, class MatrixT>
+template<class PermutatorT, class MatrixType>
 class RowPermutatedMatrix
 {
 public:
@@ -21,12 +21,12 @@ public:
 private:
 
   PermutatorT _permutator;
-  MatrixT _matrix;
+  MatrixType _matrix;
 
 public:
 
-  RowPermutatedMatrix(PermutatorT&& permutator, MatrixT&& matrix) noexcept:
-    _permutator(std::forward<PermutatorT>(permutator)), _matrix(std::forward<MatrixT>(matrix))
+  RowPermutatedMatrix(PermutatorT&& permutator, MatrixType&& matrix) noexcept:
+    _permutator(std::forward<PermutatorT>(permutator)), _matrix(std::forward<MatrixType>(matrix))
   {
     assert(_permutator.column_dimension() == _matrix.row_dimension());
   }
@@ -67,7 +67,7 @@ public:
     return make_iterator(_matrix.end());
   }
 
-  template<class M = MatrixT>
+  template<class M = MatrixType>
   auto size() const noexcept -> decltype(std::declval<M>().size())
   {
     return _matrix.size();
@@ -76,24 +76,24 @@ public:
 };
 
 
-template<class MatrixT, class PermutatorT>
+template<class MatrixType, class PermutatorT>
 class ColumnPermutatedMatrix
 {
 public:
 
   using index_type = std::common_type_t<typename std::remove_reference_t<MatrixT>::index_type, typename std::remove_reference_t<PermutatorT>::index_type>;
 
-  using value_type = MatrixT::value_type;
+  using value_type = MatrixType::value_type;
 
 private:
 
-  MatrixT _matrix;
+  MatrixType _matrix;
   PermutatorT _permutator;
 
 public:
 
-  ColumnPermutatedMatrix(MatrixT&& matrix, PermutatorT&& permutator) noexcept:
-    _matrix(std::forward<MatrixT>(matrix)), _permutator(std::forward<PermutatorT>(permutator))
+  ColumnPermutatedMatrix(MatrixType&& matrix, PermutatorT&& permutator) noexcept:
+    _matrix(std::forward<MatrixType>(matrix)), _permutator(std::forward<PermutatorT>(permutator))
   {
     assert(matrix.column_dimension() == permutator.row_dimension());
   }
@@ -134,7 +134,7 @@ public:
     return make_iterator(_matrix.end());
   }
 
-  template<class M = MatrixT>
+  template<class M = MatrixType>
   auto size() const noexcept ->decltype(std::declval<M>().size())
   {
     return _matrix.size();

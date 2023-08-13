@@ -4,7 +4,7 @@
 
 
 #include "ACCBOOST2/container.hpp"
-#include "foundations.hpp"
+#include "common.hpp"
 #include "MatixRangePolicy.hpp"
 #include "VectorView.hpp"
 #include "TransposedMatrixView.hpp"
@@ -14,14 +14,16 @@ namespace LATEL
 {
 
 
-template<class IndexT, class ValueT>
-class CompressedMatrix: public RowMatrixRangePolicy<CompressedMatrix<IndexT, ValueT>>
+template<class IndexType, class ValueType>
+class CompressedMatrix: public RowMatrixRangePolicy<CompressedMatrix<IndexType, ValueType>>
 {
 public:
 
-  using index_type = IndexT;
+  using matrix_category = LATEL::bidirectional_matrix_tag;
 
-  using value_type = ValueT;
+  using index_type = IndexType;
+
+  using value_type = ValueType;
 
 private:
 
@@ -30,8 +32,7 @@ private:
     ACCBOOST2::Array<std::size_t> _positions;
     ACCBOOST2::ZippedArray<index_type, value_type> _data;
 
-    template<std::integral I, class RangeT>
-    void assign(const I& dimension, const RangeT& range)
+    void assign(const auto& dimension, const auto& range)
     {
       assert(dimension < std::numeric_limits<index_type>::max());
 
@@ -60,14 +61,13 @@ private:
       assert(_positions[_positions.size() - 1] == nonzeros);
     }
 
-    index_type dimension() const noexcept
+    decltype(auto) dimension() const noexcept
     {
       assert(_positions.size() - 1 <= std::numeric_limits<index_type>::max());
       return _positions.size() != 0 ? _positions.size() - 1 : 0;      
     }
 
-    template<std::integral I>
-    decltype(auto) data(const I& index) const noexcept
+    decltype(auto) data(const auto& index) const noexcept
     {
       assert(index + 1 < _positions.size());
       return ACCBOOST2::slice(
@@ -87,7 +87,6 @@ public:
   CompressedMatrix() = default;
   CompressedMatrix(CompressedMatrix&&) = default;
   CompressedMatrix(const CompressedMatrix&) = default;
-
   CompressedMatrix& operator=(CompressedMatrix&&) = default;
   CompressedMatrix& operator=(const CompressedMatrix&) = default;
 
@@ -101,33 +100,27 @@ public:
     return _column_storage.dimension();
   }
 
-  template<std::integral I>
-  decltype(auto) row(const I& row_index) const noexcept
+  decltype(auto) row(const std::integral auto& row_index) const noexcept
   {
-    return _row_storage.data(row_index);
+    return LATEL::make_VectorView(_column_storage.dimension(), _row_storage.data(row_index));
   }
 
-  template<std::integral J>
-  decltype(auto) column(const J& column_index) const noexcept
+  decltype(auto) column(const std::integral auto& column_index) const noexcept
   {
-    return _column_storage.data(column_index);
+    return LATEL::make_VectorView(_row_storage.dimension(), _column_storage.data(column_index));
   }
 
-  template<matrix_concept MatrixT>
-  explicit CompressedMatrix(const MatrixT& matrix):
+  explicit CompressedMatrix(const eager_evaluation_matrix_concept auto& matrix):
     CompressedMatrix()
   {
     _row_storage.assign(matrix.row_dimension(), matrix);
-    _column_storage.assign(matrix.column_dimension(), transpose(matrix));
+    _column_storage.assign(matrix.column_dimension(), LATEL::transpose(matrix));
   }
 
-  template<matrix_concept MatrixT>
-  CompressedMatrix& operator=(const MatrixT& matrix)
+  CompressedMatrix& operator=(const eager_evaluation_matrix_concept auto& matrix)
   {
-    if(std::addressof(matrix) != this){
-      _row_storage.assign(matrix.row_dimension(), matrix);
-      _column_storage.assign(matrix.column_dimension(), transpose(matrix));
-    }
+    _row_storage.assign(matrix.row_dimension(), matrix);
+    _column_storage.assign(matrix.column_dimension(), LATEL::transpose(matrix));
     return *this;
   }
 

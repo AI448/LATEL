@@ -2,36 +2,52 @@
 #define LATEL_VECTORVIEW_HPP_
 
 
-#include "foundations.hpp"
+#include "common.hpp"
 
 
 namespace LATEL
 {
 
 
-template<class RangeT>
+template<class RangeType>
 class VectorView
 {
+
+  static_assert(std::ranges::range<RangeType>);
+  static_assert(ACCBOOST2::is_tuple<std::remove_reference_t<std::ranges::range_rvalue_reference_t<RangeType>>>);
+  static_assert(std::integral<std::remove_reference_t<std::tuple_element_t<0, std::ranges::range_reference_t<RangeType>>>>);
+
 public:
 
-  using index_type = std::size_t;
+  using vector_category = eager_evaluation_vector_tag;
 
-  using value_type = decltype(*std::declval<const RangeT&>().begin()); // TODO utility にしたい
+  using index_type = std::remove_cv_t<std::remove_reference_t<std::tuple_element_t<0, std::ranges::range_reference_t<RangeType>>>>;
+
+  using value_type = std::remove_cv_t<std::remove_reference_t<std::tuple_element_t<1, std::ranges::range_reference_t<RangeType>>>>;
 
 private:
 
   index_type _dimension;
-  RangeT _range;
+  RangeType _range;
 
 public:
 
-  VectorView(const index_type& dimension, RangeT&& range):
-    _dimension(dimension), _range(std::forward<RangeT>(range))
+  VectorView(const std::integral auto& dimension, RangeType&& range):
+    _dimension(dimension), _range(std::forward<RangeType>(range))
   {}
 
   decltype(auto) dimension() const noexcept
   {
     return _dimension;
+  }
+
+  decltype(auto) size() const noexcept
+  {
+    if constexpr (std::ranges::random_access_range<RangeType>){
+      return index_type(_range.end() - _range.begin());
+    }else{
+      return _dimension;
+    }
   }
 
   decltype(auto) begin() const noexcept
@@ -44,22 +60,13 @@ public:
     return _range.end();
   }
 
-  template<class R = RangeT>
-  requires(
-    ACCBOOST2::META::is_valid_to_size_v<const R&>
-  )
-  decltype(auto) size() const noexcept
-  {
-    return _range.size();
-  }
-
 };
 
 
-template<class RangeT>
-decltype(auto) make_VectorView(const std::size_t& dimension, RangeT&& range)
+template<class RangeType>
+decltype(auto) make_VectorView(const std::integral auto& dimension, RangeType&& range)
 {
-  return VectorView<RangeT>(dimension, std::forward<RangeT>(range));
+  return VectorView<RangeType>(dimension, std::forward<RangeType>(range));
 }
 
 

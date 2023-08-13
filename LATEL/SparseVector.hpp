@@ -3,26 +3,26 @@
 
 
 #include "ACCBOOST2/container.hpp"
-#include "foundations.hpp"
+#include "common.hpp"
 
 
 namespace LATEL
 {
 
-template<std::integral IndexT, class ValueT>
+template<class IndexType, class ValueType>
 class SparseVector
 {
 public:
 
-  using index_type = IndexT;
-
-  using value_type = ValueT;
+  using vector_category = LATEL::random_access_vector_tag;
+  using index_type = IndexType;
+  using value_type = ValueType;
 
 private:
 
-  static constexpr std::size_t _null_position = std::numeric_limits<std::size_t>::max();
+  static inline constexpr std::size_t _null_position = std::numeric_limits<std::size_t>::max();
 
-  static constexpr value_type _zero = ValueT(0);
+  static inline constexpr value_type _zero = ValueType(0);
 
   /// 非ゼロ要素の添字の配列
   ACCBOOST2::Array<index_type> _indexes;
@@ -37,13 +37,10 @@ public:
   SparseVector(const SparseVector&) = default;
 
   /// 次元を指定して構築
-  template<std::integral I>
-  explicit SparseVector(const I& dimension):
+  explicit SparseVector(std::integral auto&& dimension):
     _indexes(), _position_values()
   {
-    assert(dimension <= std::numeric_limits<index_type>::max());
-
-    _indexes.reserve(dimension);    
+    _indexes.reserve(dimension);
     _position_values.resize(dimension, _null_position, _zero);
   }
 
@@ -51,26 +48,29 @@ public:
   SparseVector& operator=(const SparseVector&) = default;
 
   /// @brief 次元
-  /// @return 
+  /// @return 次元
   decltype(auto) dimension() const noexcept
   {
     return _position_values.size();
   }
 
+  decltype(auto) size() const noexcept
+  {
+    return _indexes.size();
+  }
+
   /// @brief 次元を指定してゼロクリア
   /// @param dimension 次元
-  template<std::integral I>
-  void zero_clear(const I& dimension)
+  void zero_clear(std::integral auto&& dimension)
   {
     assert(dimension <= std::numeric_limits<index_type>::max());
-
-    _position_values.resize(dimension, _null_position, _zero);
     for(auto&& i: _indexes){
       if(i < _position_values.size()){
         _position_values[i] = std::make_tuple(_null_position, _zero);
       }
     }
     _indexes.clear();
+    _position_values.resize(dimension, _null_position, _zero);
     _indexes.reserve(dimension);
   }
 
@@ -82,8 +82,10 @@ public:
     _indexes.clear();
   }
 
-  template<std::integral I>
-  decltype(auto) operator[](const I& index) const noexcept
+  /// @brief 
+  /// @param index 
+  /// @return 
+  decltype(auto) operator[](std::integral auto&& index) const noexcept
   {
     assert(index < _position_values.size());
     return ACCBOOST2::get<1>(_position_values[index]);
@@ -100,8 +102,7 @@ private:
     SparseVector& _sparse_vector;
     index_type _index;
 
-    template<std::integral I>
-    Proxy(SparseVector& sparse_vector, const I& index) noexcept:
+    Proxy(SparseVector& sparse_vector, const std::integral auto& index) noexcept:
       _sparse_vector(sparse_vector), _index(index)
     {}
 
@@ -148,8 +149,7 @@ private:
 
 public:
 
-  template<std::integral I>
-  decltype(auto) operator[](const I& index) noexcept
+  decltype(auto) operator[](const std::integral auto& index) noexcept
   {
     assert(index < _position_values.size());
     return Proxy(*this, index);
@@ -181,13 +181,7 @@ public:
     return make_iterator(_indexes.end());
   }
 
-  decltype(auto) size() const noexcept
-  {
-    return _indexes.size();
-  }
-
-  template<vector_concept VectorT>
-  explicit SparseVector(const VectorT& vector):
+  explicit SparseVector(const eager_evaluation_vector_concept auto& vector):
     SparseVector(vector.dimension())
   {
     for(auto&& [i, x]: vector){
@@ -195,36 +189,34 @@ public:
     }
   }
 
-  template<vector_concept VectorT>
-  SparseVector& operator=(const VectorT& vector)
+  SparseVector& operator=(const eager_evaluation_vector_concept auto& vector)
   {
-    clear(vector.dimension());
+    zero_clear(vector.dimension());
     for(auto&& [i, x]: vector){
       operator[](i) = x;
     }
     return *this;
   }
 
-  template<vector_concept VectorT>
-  SparseVector& operator+=(const VectorT& vector)
+  SparseVector& operator+=(const eager_evaluation_vector_concept auto& vector)
   {
+    assert(vector.dimension() == dimension());
     for(auto&& [i, x]: vector){
       operator[](i) += x;
     }
     return *this;
   }
 
-  template<vector_concept VectorT>
-  SparseVector& operator-=(const VectorT& vector)
+  SparseVector& operator-=(const eager_evaluation_vector_concept auto& vector)
   {
+    assert(vector.dimension() == dimension());
     for(auto&& [i, x]: vector){
       operator[](i) -= x;
     }
     return *this;
   }
 
-  template<class T>
-  SparseVector& operator*=(const T& scalar)
+  SparseVector& operator*=(const std::convertible_to<index_type> auto& scalar)
   {
     for(auto&& i: _indexes){
       ACCBOOST2::get<1>(_position_values[i]) *= scalar;
@@ -232,8 +224,7 @@ public:
     return *this;
   }
 
-  template<class T>
-  SparseVector& operator/=(const T& scalar)
+  SparseVector& operator/=(const std::convertible_to<index_type> auto& scalar)
   {
     for(auto&& i: _indexes){
       ACCBOOST2::get<1>(_position_values[i]) /= scalar;

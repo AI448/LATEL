@@ -2,7 +2,7 @@
 #define LATEL_PERMUTATEDVECTORVIEW_HPP_
 
 
-#include "foundations.hpp"
+#include "LATEL_common.hpp"
 
 
 namespace LATEL
@@ -34,6 +34,11 @@ public:
   decltype(auto) dimension() const noexcept
   {
     return _permutator.row_dimension();
+  }
+
+  decltype(auto) size() const noexcept
+  {
+    return _vector.size();
   }
 
 private:
@@ -69,7 +74,7 @@ public:
 
 
 template<permutator_concept PermutatorT, vector_concept VectorT>
-decltype(auto) operator*(PermutatorT&& permutator, VectorT&& vector) noexcept
+decltype(auto) operator*(PermutatorT&& permutator, VectorT&& vector)
 {
   return PermutatedVectorView<PermutatorT, VectorT>(std::forward<PermutatorT>(permutator), std::forward<VectorT>(vector));
 }
