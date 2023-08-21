@@ -15,7 +15,7 @@ class CoordinateMatrix
 {
 public:
 
-  using matrix_category = LATEL::eager_evaluation_matrix_tag;
+  using matrix_category = LATEL::sequential_access_matrix_tag;
 
   using index_type = IndexType;
 
@@ -94,7 +94,7 @@ public:
     _data.clear();
   }
 
-  explicit CoordinateMatrix(const eager_evaluation_matrix_concept auto& matrix):
+  explicit CoordinateMatrix(const sequential_access_matrix_concept auto& matrix):
     _m(matrix.row_dimension()), _n(matrix.column_dimension()), _data(matrix)
   {
 
@@ -123,7 +123,7 @@ public:
 
   }
 
-  CoordinateMatrix& operator=(const eager_evaluation_matrix_concept auto& matrix)
+  CoordinateMatrix& operator=(const sequential_access_matrix_concept auto& matrix)
   {
     _m = matrix.row_dimension();
     _n = matrix.column_dimension();

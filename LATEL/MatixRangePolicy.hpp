@@ -23,22 +23,31 @@ protected:
 
 private:
 
-  template<class IndexType>
-  decltype(auto) make_iterable_iterator(const IndexType& first_row_index) const noexcept
+  struct AddRowIndex
   {
-    return ACCBOOST2::make_map_iterator(
-      [&](auto&& row_index)
-      {
-        return ACCBOOST2::map(
-          [row_index=row_index](auto&& pair) -> decltype(auto)
-          {
-            return std::tuple<IndexType, decltype(ACCBOOST2::get<0>(pair)), decltype(ACCBOOST2::get<1>(pair))>(row_index, ACCBOOST2::get<0>(pair), ACCBOOST2::get<1>(pair));
-          },
-          static_cast<const DerivativeMatrixT&>(*this).row(row_index)
-        );
-      },
-      ACCBOOST2::make_integer_iterator(first_row_index)
-    );
+    DerivativeMatrixT::index_type i;
+    decltype(auto) operator()(auto&& pair) const noexcept
+    {
+      return std::tuple<
+        typename DerivativeMatrixT::index_type, decltype(ACCBOOST2::get<0>(pair)), decltype(ACCBOOST2::get<1>(pair))
+      >(
+        i, ACCBOOST2::get<0>(pair), ACCBOOST2::get<1>(pair)
+      );
+    }
+  };
+
+  struct MakeRowRange
+  {
+    const RowMatrixRangePolicy* p;
+    decltype(auto) operator()(const auto&& i) const noexcept
+    {
+      return ACCBOOST2::map(AddRowIndex{i}, static_cast<const DerivativeMatrixT*>(p)->row(i));
+    }
+  };
+
+  decltype(auto) make_rows_iterator(const auto& first_row_index) const noexcept
+  {
+    return ACCBOOST2::make_map_iterator(MakeRowRange{this}, ACCBOOST2::make_integer_iterator(static_cast<typename DerivativeMatrixT::index_type>(first_row_index)));
   }
 
 public:
@@ -46,13 +55,13 @@ public:
   decltype(auto) begin() const noexcept
   {
     auto m = static_cast<const DerivativeMatrixT&>(*this).row_dimension();
-    return ACCBOOST2::make_chain_from_iterable_iterator(make_iterable_iterator(static_cast<decltype(m)>(0)), make_iterable_iterator(m));
+    return ACCBOOST2::make_chain_from_iterable_iterator(make_rows_iterator(0), make_rows_iterator(m));
   }
 
   decltype(auto) end() const noexcept
   {
     auto m = static_cast<const DerivativeMatrixT&>(*this).row_dimension();
-    return ACCBOOST2::make_chain_from_iterable_sentinel(make_iterable_iterator(m));
+    return ACCBOOST2::make_chain_from_iterable_sentinel(make_rows_iterator(m));
   }
 
 };
@@ -72,22 +81,31 @@ protected:
 
 private:
 
-  template<class IndexType>
-  decltype(auto) make_iterable_iterator(const IndexType& first_column_index) const noexcept
+  struct AddColumnIndex
   {
-    return ACCBOOST2::make_map_iterator(
-      [&](auto&& column_index)
-      {
-        return ACCBOOST2::map(
-          [column_index=column_index](auto&& pair) -> decltype(auto)
-          {
-            return std::tuple<decltype(ACCBOOST2::get<0>(pair)), IndexType, decltype(ACCBOOST2::get<1>(pair))>(ACCBOOST2::get<0>(pair), column_index, ACCBOOST2::get<1>(pair));
-          },
-          static_cast<const DerivativeMatrixT&>(*this).column(column_index)
-        );
-      },
-      ACCBOOST2::make_integer_iterator(first_column_index)
-    );
+    DerivativeMatrixT::index_type j;
+    decltype(auto) operator()(auto&& pair) const noexcept
+    {
+      return std::tuple<
+        decltype(ACCBOOST2::get<0>(pair)), typename DerivativeMatrixT::index_type, decltype(ACCBOOST2::get<1>(pair))
+      >(
+        ACCBOOST2::get<0>(pair), j, ACCBOOST2::get<1>(pair)
+      );
+    }
+  };
+
+  struct MakeColumnRange
+  {
+    const ColumnMatrixRangePolicy* p;
+    decltype(auto) operator()(const auto&& j) const noexcept
+    {
+      return ACCBOOST2::map(AddColumnIndex{j}, static_cast<const DerivativeMatrixT*>(p)->column(j));
+    }
+  };
+
+  decltype(auto) make_columns_iterator(const auto& first_column_index) const noexcept
+  {
+    return ACCBOOST2::make_map_iterator(MakeColumnRange{this}, ACCBOOST2::make_integer_iterator(static_cast<typename DerivativeMatrixT::index_type>(first_column_index)));
   }
 
 public:
@@ -95,13 +113,13 @@ public:
   decltype(auto) begin() const noexcept
   {
     auto n = static_cast<const DerivativeMatrixT&>(*this).column_dimension();
-    return ACCBOOST2::make_chain_from_iterable_iterator(make_iterable_iterator(static_cast<decltype(n)>(0)), make_iterable_iterator(n));
+    return ACCBOOST2::make_chain_from_iterable_iterator(make_columns_iterator(0), make_columns_iterator(n));
   }
 
   decltype(auto) end() const noexcept
   {
     auto n = static_cast<const DerivativeMatrixT&>(*this).column_dimension();
-    return ACCBOOST2::make_chain_from_iterable_sentinel(make_iterable_iterator(n));
+    return ACCBOOST2::make_chain_from_iterable_sentinel(make_columns_iterator(n));
   }
 
 };

@@ -19,7 +19,7 @@ class VectorView
 
 public:
 
-  using vector_category = eager_evaluation_vector_tag;
+  using vector_category = sequential_access_vector_tag;
 
   using index_type = std::remove_cv_t<std::remove_reference_t<std::tuple_element_t<0, std::ranges::range_reference_t<RangeType>>>>;
 
@@ -32,7 +32,7 @@ private:
 
 public:
 
-  VectorView(const std::integral auto& dimension, RangeType&& range):
+  explicit VectorView(const std::integral auto& dimension, RangeType&& range):
     _dimension(dimension), _range(std::forward<RangeType>(range))
   {}
 
@@ -41,7 +41,7 @@ public:
     return _dimension;
   }
 
-  decltype(auto) size() const noexcept
+  decltype(auto) upper_of_nonzeros() const noexcept
   {
     if constexpr (std::ranges::random_access_range<RangeType>){
       return index_type(_range.end() - _range.begin());

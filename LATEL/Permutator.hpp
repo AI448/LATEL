@@ -3,7 +3,7 @@
 
 
 #include "ACCBOOST2/container.hpp"
-#include "LATEL_common.hpp"
+#include "common.hpp"
 
 
 namespace LATEL
@@ -14,11 +14,12 @@ class Permutator
 {
 public:
 
+  using permutator_category = LATEL::permutator_tag;
   using index_type = IndexType;
 
-private:
+  static constexpr index_type null_index = std::numeric_limits<index_type>::max();
 
-  static constexpr index_type _null_index = std::numeric_limits<index_type>::max();
+private:
 
   ACCBOOST2::Array<index_type> _permutation;
   ACCBOOST2::Array<index_type> _unpermutation;
@@ -72,8 +73,7 @@ public:
     return _unpermutation[to];
   }
 
-  template<std::integral I, std::integral J>
-  void set(const I& from, const J& to) noexcept
+  void set(const std::integral auto& from, const std::integral auto& to) noexcept
   {
     assert(from < _permutation.size());
     assert(to < _unpermutation.size());
@@ -81,10 +81,10 @@ public:
     index_type f = _unpermutation[to];
     _permutation[from] = to;
     _unpermutation[to] = from;
-    if(f != _null_index){
+    if(f != null_index){
       _permutation[f] = t;
     }
-    if(t != _null_index){
+    if(t != null_index){
       _unpermutation[t] = f;
     }
   }
@@ -97,14 +97,14 @@ public:
         _permutation[i] = i;
       }
       for(auto&& i: ACCBOOST2::range(std::min(m, n), n)){
-        _permutation[i] = _null_index;
+        _permutation[i] = null_index;
       }
       _unpermutation.resize(m);
       for(auto&& i: ACCBOOST2::range(std::min(m, n))){
         _unpermutation[i] = i;
       }
       for(auto&& i: ACCBOOST2::range(std::min(m, n), m)){
-        _unpermutation[i] = _null_index;
+        _unpermutation[i] = null_index;
       }
     }catch(...){
       _permutation.clear();

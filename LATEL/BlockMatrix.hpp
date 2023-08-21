@@ -35,7 +35,7 @@ private:
 
   std::array<Data, 2> _data;
 
-  void assign(const eager_evaluation_matrix_concept auto& matrix)
+  void assign(const sequential_access_matrix_concept auto& matrix)
   {
     std::array<index_type, 2> block_size = {_data[Axis::ROW]._block_size, _data[Axis::COLUMN]._block_size};
     auto m = matrix.row_dimension();
@@ -110,7 +110,7 @@ private:
     }
   }
 
-  void assign(const std::integral auto& row_block_size, const std::integral auto& column_block_size, const eager_evaluation_matrix_concept auto& matrix)
+  void assign(const std::integral auto& row_block_size, const std::integral auto& column_block_size, const sequential_access_matrix_concept auto& matrix)
   {
     assert(row_block_size != 0);
     assert(column_block_size != 0);
@@ -150,13 +150,13 @@ public:
   //   _data[Axis::COLUMN]._positions.resize((column_dimension + 1) * row_block_size, 0);
   // }
 
-  BlockMatrix(const std::integral auto& row_block_size, const std::integral auto& column_block_size, const eager_evaluation_matrix_concept auto& matrix):
+  BlockMatrix(const std::integral auto& row_block_size, const std::integral auto& column_block_size, const sequential_access_matrix_concept auto& matrix):
     BlockMatrix()
   {
     assign(row_block_size, column_block_size, matrix);
   }
 
-  explicit BlockMatrix(const eager_evaluation_matrix_concept auto& matrix):
+  explicit BlockMatrix(const sequential_access_matrix_concept auto& matrix):
     BlockMatrix()
   {
     assign(matrix);
@@ -165,7 +165,7 @@ public:
   BlockMatrix& operator=(BlockMatrix&&) = default;
   BlockMatrix& operator=(const BlockMatrix&) = default;
 
-  BlockMatrix& operator=(const eager_evaluation_matrix_concept auto& matrix)
+  BlockMatrix& operator=(const sequential_access_matrix_concept auto& matrix)
   {
     assign(matrix);
     return *this;

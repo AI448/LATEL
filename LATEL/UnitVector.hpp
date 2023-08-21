@@ -2,7 +2,7 @@
 #define LATEL_UNITVECTOR_HPP_
 
 
-#include "LATEL_common.hpp"
+#include "common.hpp"
 
 
 namespace LATEL
@@ -14,6 +14,7 @@ class UnitVector
 {
 public:
 
+  using vector_category = LATEL::sequential_access_vector_tag;
   using index_type = IndexType;
   using value_type = ValueType;
 
@@ -24,7 +25,7 @@ private:
 
 public:
 
-  UnitVector(const index_type& dimension, const index_type& index) noexcept:
+  expliclit UnitVector(const index_type& dimension, const index_type& index) noexcept:
     _dimension(dimension), _index(index)
   {}
 
@@ -39,30 +40,33 @@ public:
     return _dimension;
   }
 
-  decltype(auto) size() const noexcept
+  decltype(auto) upper_of_nonzeros() const noexcept
   {
     return 1;
   }
 
-  decltype(auto) make_iterator(const std::size_t i) const noexcept
+private:
+
+  struct MakePair
   {
-    return ACCBOOST2::make_map_iterator(
-      [&](auto&&)
-      {
-        return ACCBOOST2::capture_as_tuple(_index, 1);
-      },
-      ACCBOOST2::make_integer_iterator(i)
-    );
-  }
+    const UnitVector* p = nullptr;
+    decltype(auto) operator()(auto&&) const noexcept
+    {
+      assert(p != nullptr);
+      return ACCBOOST2::capture_as_tuple(p->_index, 1);
+    }
+  };
+
+public:
 
   decltype(auto) begin() const noexcept
   {
-    return make_iterator(0);
+    return ACCBOOST2::make_map_iterator(MakePair{this}, ACCBOOST2::make_integer_iterator(0));
   }
 
   decltype(auto) end() const noexcept
   {
-    return make_iterator(1);
+    return ACCBOOST2::make_map_iterator_or_sentinel(MakePair{this}, ACCBOOST2::make_integer_iterator(1));
   }
 
   value_type operator[](const index_type& index) const noexcept

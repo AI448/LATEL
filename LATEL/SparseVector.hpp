@@ -54,7 +54,7 @@ public:
     return _position_values.size();
   }
 
-  decltype(auto) size() const noexcept
+  decltype(auto) upper_of_nonzeros() const noexcept
   {
     return _indexes.size();
   }
@@ -157,48 +157,52 @@ public:
 
 private:
 
-  template<class IndexIteratorT>
-  decltype(auto) make_iterator(IndexIteratorT&& index_iterator) const noexcept
+  struct Functor
   {
-    return ACCBOOST2::make_map_iterator(
-      [&](const auto& index)
-      {
-        return std::forward_as_tuple(index, ACCBOOST2::get<1>(_position_values[index]));
-      },
-      std::forward<IndexIteratorT>(index_iterator)
-    );
-  }
+    const SparseVector* p = nullptr;
+    decltype(auto) operator()(const auto& index) const noexcept
+    {
+      assert(p != nullptr);
+      return std::forward_as_tuple(index, ACCBOOST2::get<1>(p->_position_values[index]));
+    }
+  };
 
 public:
 
   decltype(auto) begin() const noexcept
   {
-    return make_iterator(_indexes.begin());
+    return ACCBOOST2::make_map_iterator(Functor{this}, _indexes.begin());
   }
 
   decltype(auto) end() const noexcept
   {
-    return make_iterator(_indexes.end());
+    return ACCBOOST2::make_map_iterator_or_sentinel(Functor{this}, _indexes.end());    
   }
 
-  explicit SparseVector(const eager_evaluation_vector_concept auto& vector):
-    SparseVector(vector.dimension())
+  explicit SparseVector(const sequential_access_vector_concept auto& vector):
+    SparseVector()
   {
-    for(auto&& [i, x]: vector){
-      operator[](i) = x;
-    }
+    operator=(vector);
   }
 
-  SparseVector& operator=(const eager_evaluation_vector_concept auto& vector)
+  SparseVector& operator=(const sequential_access_vector_concept auto& vector)
   {
+    // _indexes.clear();
+    // _position_values.clear();
+    // _indexes.reserve(vector.upper_of_nonzeros());
+    // _position_values.resize(vector.dimension(), _null_position, _zero);
+    // for(auto&& [i, x]: vector){
+    //   _position_values[i] = std::forward_as_tuple(_indexes.size(), std::forward<decltype(x)>(x));
+    //   _indexes.push_back_without_allocation(std::forward<decltype(i)>(i));      
+    // }
     zero_clear(vector.dimension());
     for(auto&& [i, x]: vector){
-      operator[](i) = x;
+      operator[](i) += x;
     }
     return *this;
   }
 
-  SparseVector& operator+=(const eager_evaluation_vector_concept auto& vector)
+  SparseVector& operator+=(const sequential_access_vector_concept auto& vector)
   {
     assert(vector.dimension() == dimension());
     for(auto&& [i, x]: vector){
@@ -207,7 +211,7 @@ public:
     return *this;
   }
 
-  SparseVector& operator-=(const eager_evaluation_vector_concept auto& vector)
+  SparseVector& operator-=(const sequential_access_vector_concept auto& vector)
   {
     assert(vector.dimension() == dimension());
     for(auto&& [i, x]: vector){
@@ -216,7 +220,7 @@ public:
     return *this;
   }
 
-  SparseVector& operator*=(const std::convertible_to<index_type> auto& scalar)
+  SparseVector& operator*=(const std::convertible_to<value_type> auto& scalar)
   {
     for(auto&& i: _indexes){
       ACCBOOST2::get<1>(_position_values[i]) *= scalar;
@@ -224,11 +228,23 @@ public:
     return *this;
   }
 
-  SparseVector& operator/=(const std::convertible_to<index_type> auto& scalar)
+  SparseVector& operator/=(const std::convertible_to<value_type> auto& scalar)
   {
     for(auto&& i: _indexes){
       ACCBOOST2::get<1>(_position_values[i]) /= scalar;
     }
+    return *this;
+  }
+
+  explicit SparseVector(const lazy_evaluation_vector_concept auto& vector):
+    SparseVector()
+  {
+    vector.assign_to(*this);
+  }
+
+  SparseVector& operator=(const lazy_evaluation_vector_concept auto& vector)
+  {
+    vector.assign_to(*this);
     return *this;
   }
 

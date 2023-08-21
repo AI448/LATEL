@@ -1,11 +1,15 @@
-#ifndef LATEL_TRANSPOSEDMATRIXVIEW_HPP_
-#define LATEL_TRANSPOSEDMATRIXVIEW_HPP_
+#ifndef LATEL_OPERATORS_TRANSPOSE_MATRIX_HPP_
+#define LATEL_OPERATORS_TRANSPOSE_MATRIX_HPP_
 
 
-#include "common.hpp"
+#include "../common.hpp"
 
 
 namespace LATEL
+{
+
+
+namespace _transpose_Matrix
 {
 
 
@@ -23,7 +27,7 @@ public:
       std::conditional_t<
         LATEL::column_matrix_concept<MatrixType>,
         LATEL::row_matrix_tag,
-        LATEL::eager_evaluation_matrix_tag
+        LATEL::sequential_access_matrix_tag
       >
     >
   >;
@@ -64,41 +68,40 @@ public:
 
 private:
 
-  template<class IteratorT>
-  decltype(auto) make_transposed_iterator(IteratorT&& iterator) const noexcept
+  struct Transpose
   {
-    return ACCBOOST2::make_map_iterator(
-      [](auto&& trio)
-      {
-        return ACCBOOST2::capture_as_tuple(
-          ACCBOOST2::get<1>(trio),
-          ACCBOOST2::get<0>(trio),
-          ACCBOOST2::get<2>(trio)
-        );
-      },
-      std::forward<IteratorT>(iterator)
-    );
-  }
+    decltype(auto) operator()(auto&& trio) const noexcept
+    {
+      return ACCBOOST2::capture_as_tuple(
+        ACCBOOST2::get<1>(std::forward<decltype(trio)>(trio)),
+        ACCBOOST2::get<0>(std::forward<decltype(trio)>(trio)),
+        ACCBOOST2::get<2>(std::forward<decltype(trio)>(trio))
+      );
+    }
+  };
 
 public:
 
   decltype(auto) begin() const noexcept
   {
-    return make_transposed_iterator(_matrix.begin());
+    return ACCBOOST2::make_map_iterator(Transpose{}, _matrix.begin());
   }
 
   decltype(auto) end() const noexcept
   {
-    return make_transposed_iterator(_matrix.end());
+    return ACCBOOST2::make_map_iterator_or_sentinel(Transpose{}, _matrix.end());
   }
 
 };
 
 
-template<eager_evaluation_matrix_concept MatrixType>
+}
+
+
+template<LATEL::sequential_access_matrix_concept MatrixType>
 decltype(auto) transpose(MatrixType&& matrix) noexcept
 {
-  return TransposedMatrixView<MatrixType>(std::forward<MatrixType>(matrix));
+  return _transpose_Matrix::TransposedMatrixView<MatrixType>(std::forward<MatrixType>(matrix));
 }
 
 

@@ -14,7 +14,7 @@ class MatrixView
 {
 public:
 
-  using matrix_category = LATEL::eager_evaluation_matrix_tag;
+  using matrix_category = LATEL::sequential_access_matrix_tag;
 
   using index_type = std::common_type_t<
     std::remove_cv_t<std::remove_reference_t<std::tuple_element_t<0, std::remove_reference_t<std::ranges::range_reference_t<RangeType>>>>>,

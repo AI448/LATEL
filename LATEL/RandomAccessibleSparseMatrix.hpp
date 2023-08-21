@@ -72,7 +72,7 @@ namespace LATEL
     {
     public:
 
-      using vector_category = LATEL::eager_evaluation_vector_tag;
+      using vector_category = LATEL::sequential_access_vector_tag;
       using index_type = RandomAccessibleSparseMatrix::index_type;
       using value_type = RandomAccessibleSparseMatrix::value_type;
 
@@ -248,7 +248,7 @@ namespace LATEL
       return Proxy(*this, std::get<0>(index_pair[0]), std::get<1>(index_pair[1]));
     }
 
-    explicit RandomAccessibleSparseMatrix(const LATEL::eager_evaluation_matrix_concept auto& matrix):
+    explicit RandomAccessibleSparseMatrix(const LATEL::sequential_access_matrix_concept auto& matrix):
       _sparse_2d_array(matrix.row_dimension(), matrix.column_dimension())
     {
       for(auto&& [i, j, a]: matrix){

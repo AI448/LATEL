@@ -15,16 +15,13 @@ enum Axis: std::size_t {ROW = 0, COLUMN = 1};
 
 
 struct vector_tag {};
-
-struct eager_evaluation_vector_tag: vector_tag {};
-
-struct random_access_vector_tag: eager_evaluation_vector_tag {};
-
+struct sequential_access_vector_tag: vector_tag {};
+struct random_access_vector_tag: sequential_access_vector_tag {};
 struct lazy_evaluation_vector_tag: vector_tag {};
 
-
+/// ベクターであることを表すコンセプト
 template<class V>
-concept vector_concept = 
+concept vector_concept = (
   requires (const V& x)
   {
     typename std::remove_reference_t<V>::vector_category;
@@ -32,25 +29,26 @@ concept vector_concept =
     typename std::remove_reference_t<V>::value_type;
     {x.dimension()} -> std::convertible_to<typename std::remove_reference_t<V>::index_type>;
   } &&
-  std::is_base_of_v<vector_tag, typename std::remove_reference_t<V>::vector_category>  
-;
-
-
-template<class V>
-concept eager_evaluation_vector_concept = (
-  vector_concept<V> &&
-  std::is_base_of_v<eager_evaluation_vector_tag, typename std::remove_reference_t<V>::vector_category> &&
-  std::ranges::range<const V&> &&
-  std::convertible_to<
-    std::ranges::range_reference_t<const V&>,
-    std::tuple<typename std::remove_reference_t<V>::index_type, typename std::remove_reference_t<V>::value_type>
-  >
+  std::is_base_of_v<vector_tag, typename std::remove_reference_t<V>::vector_category>
 );
 
+/// シーケンシャルアクセス可能なベクターであることを表すコンセプト
+template<class V>
+concept sequential_access_vector_concept = (
+  vector_concept<V> &&
+  std::is_base_of_v<sequential_access_vector_tag, typename std::remove_reference_t<V>::vector_category> &&
+  std::ranges::range<const V&> &&
+  std::convertible_to<std::ranges::range_reference_t<const V&>, std::tuple<typename std::remove_reference_t<V>::index_type, typename std::remove_reference_t<V>::value_type>> &&
+  requires (const V& x)
+  {
+    {x.upper_of_nonzeros()} -> std::convertible_to<typename std::remove_reference_t<V>::index_type>;
+  }
+);
 
+/// ランダムアクセス可能なベクターであることを表すコンセプト
 template<class V>
 concept random_access_vector_concept = (
-  eager_evaluation_vector_concept<V> &&
+  sequential_access_vector_concept<V> &&
   std::is_base_of_v<random_access_vector_tag, typename std::remove_reference_t<V>::vector_category> &&
   requires (const V& x)
   {
@@ -58,18 +56,22 @@ concept random_access_vector_concept = (
   }
 );
 
+/// イテレータによる即時評価が不可能なベクターであることを表すコンセプト
+template<class X>
+concept lazy_evaluation_vector_concept = (
+  vector_concept<X> &&
+  std::is_base_of_v<lazy_evaluation_vector_tag, typename std::remove_reference_t<X>::vector_category>
+);
+
 
 struct matrix_tag {};
-
-struct eager_evaluation_matrix_tag: matrix_tag {};
-
-struct row_matrix_tag: eager_evaluation_matrix_tag {};
-
-struct column_matrix_tag: eager_evaluation_matrix_tag {};
-
+struct sequential_access_matrix_tag: matrix_tag {};
+struct row_matrix_tag: sequential_access_matrix_tag {};
+struct column_matrix_tag: sequential_access_matrix_tag {};
 struct bidirectional_matrix_tag: row_matrix_tag, column_matrix_tag {};
 
 
+/// 行列であることを表すコンセプト
 template<class M>
 concept matrix_concept = (
   requires (const M& x)
@@ -83,11 +85,11 @@ concept matrix_concept = (
   std::is_base_of_v<LATEL::matrix_tag, typename std::remove_reference_t<M>::matrix_category>
 );
 
-
+/// シーケンシャルアクセス可能な行列であることを表すコンセプト
 template<class M>
-concept eager_evaluation_matrix_concept = (
+concept sequential_access_matrix_concept = (
   matrix_concept<M> &&
-  std::is_base_of_v<LATEL::eager_evaluation_matrix_tag, typename std::remove_reference_t<M>::matrix_category> &&
+  std::is_base_of_v<LATEL::sequential_access_matrix_tag, typename std::remove_reference_t<M>::matrix_category> &&
   std::ranges::range<M> &&
   std::convertible_to<
     std::ranges::range_reference_t<const M&>,
@@ -95,28 +97,29 @@ concept eager_evaluation_matrix_concept = (
   >
 );
 
-
+/// 行に対してランダムアクセス可能な行列であることを表すコンセプト
 template<class M>
 concept row_matrix_concept = (
-  eager_evaluation_matrix_concept<M> &&
+  sequential_access_matrix_concept<M> &&
   std::is_base_of_v<LATEL::row_matrix_tag, typename std::remove_reference_t<M>::matrix_category> &&
   requires (M& m)
   {
-    {m.row(std::declval<typename std::remove_reference_t<M>::index_type>())} -> eager_evaluation_vector_concept;
+    {m.row(std::declval<typename std::remove_reference_t<M>::index_type>())} -> sequential_access_vector_concept;
   }
 );
 
-
+/// 列に対してランダムアクセス可能な行列であることを表すコンセプト
 template<class M>
 concept column_matrix_concept = (
-  eager_evaluation_matrix_concept<M> &&
+  sequential_access_matrix_concept<M> &&
   std::is_base_of_v<LATEL::column_matrix_tag, typename std::remove_reference_t<M>::matrix_category> &&
   requires (M& m)
   {
-    {m.column(std::declval<typename std::remove_reference_t<M>::index_type>())} -> eager_evaluation_vector_concept;
+    {m.column(std::declval<typename std::remove_reference_t<M>::index_type>())} -> sequential_access_vector_concept;
   }
 );
 
+/// 行と列に対してランダムアクセス可能な matrix であることを表すコンセプト
 template<class M>
 concept bidirectional_matrix_concept = (
   row_matrix_concept<M> &&
@@ -124,27 +127,36 @@ concept bidirectional_matrix_concept = (
 );
 
 
-// template<class M>
-// concept row_major_matrix_concept = 
-//   matrix_concept<M> &&
-//   requires (const M& x)
-//   {
-//     {x.row(std::declval<typename std::remove_reference_t<M>::index_type>())} -> vector_concept;
-//   };
+struct permutator_tag {};
+
+/// 置換であることを表すコンセプト
+template<class X>
+concept permutator_concept = (
+  requires (const X& x)
+  {
+    typename std::remove_reference_t<X>::permutator_category;
+    typename std::remove_reference_t<X>::index_type;
+    {std::remove_reference_t<X>::null_index} -> std::convertible_to<typename std::remove_reference_t<X>::index_type>;
+    {x.row_dimension()} -> std::convertible_to<typename std::remove_reference_t<X>::index_type>;
+    {x.column_dimension()} -> std::convertible_to<typename std::remove_reference_t<X>::index_type>;
+    {x.permutate(std::declval<typename std::remove_reference_t<X>::index_type>())} -> std::convertible_to<typename std::remove_reference_t<X>::index_type>;
+    {x.unpermutate(std::declval<typename std::remove_reference_t<X>::index_type>())} -> std::convertible_to<typename std::remove_reference_t<X>::index_type>;
+  } &&
+  std::is_base_of_v<LATEL::permutator_tag, typename std::remove_reference_t<X>::permutator_category>
+);
 
 
-// template<class P>
-// concept permutator_concept = requires (const P& x)
-// {
-//   typename std::remove_reference_t<P>::index_type;
-//   {x.row_dimension()} -> std::convertible_to<typename std::remove_reference_t<P>::index_type>;
-//   {x.column_dimension()} -> std::convertible_to<typename std::remove_reference_t<P>::index_type>;
-//   {x.permutate(std::declval<const typename std::remove_reference_t<P>::index_type&>())} -> std::convertible_to<typename std::remove_reference_t<P>::index_type>;
-//   {x.unpermutate(std::declval<const typename std::remove_reference_t<P>::index_type&>())} -> std::convertible_to<typename std::remove_reference_t<P>::index_type>;
-// };
+/// ベクトル・行列・置換ではないことを表すコンセプト
+template<class X>
+concept scalar_concept = (
+  !LATEL::vector_concept<X> &&
+  !LATEL::matrix_concept<X> &&
+  !LATEL::permutator_concept<X>
+);
+
 
 template<class CharT>
-void serialize(ACCBOOST2::IO::OutputStream<CharT>& ostream, const eager_evaluation_vector_concept auto& vector)
+void serialize(ACCBOOST2::IO::OutputStream<CharT>& ostream, const sequential_access_vector_concept auto& vector)
 {
   ostream("[");
   bool first = true;
@@ -160,7 +172,7 @@ void serialize(ACCBOOST2::IO::OutputStream<CharT>& ostream, const eager_evaluati
 }
 
 template<class CharT>
-void serialize(ACCBOOST2::IO::OutputStream<CharT>& ostream, const eager_evaluation_matrix_concept auto& matrix)
+void serialize(ACCBOOST2::IO::OutputStream<CharT>& ostream, const sequential_access_matrix_concept auto& matrix)
 {
   ostream("[");
   bool first = true;
