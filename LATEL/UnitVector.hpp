@@ -14,7 +14,7 @@ class UnitVector
 {
 public:
 
-  using vector_category = LATEL::sequential_access_vector_tag;
+  using vector_category = LATEL::random_access_vector_tag;
   using index_type = IndexType;
   using value_type = ValueType;
 
@@ -25,7 +25,7 @@ private:
 
 public:
 
-  expliclit UnitVector(const index_type& dimension, const index_type& index) noexcept:
+  explicit UnitVector(const index_type& dimension, const index_type& index) noexcept:
     _dimension(dimension), _index(index)
   {}
 

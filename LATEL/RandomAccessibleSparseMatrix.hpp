@@ -236,16 +236,14 @@ namespace LATEL
 
   public:
 
-    template<std::integral I, std::integral J>
-    decltype(auto) operator[](const std::tuple<I, J>& index_pair) const noexcept
+    decltype(auto) operator[](const std::tuple<index_type, index_type>& index_pair) const noexcept
     {
-      return _sparse_2d_array.get(std::get<0>(index_pair[0]), std::get<1>(index_pair[1]), _zero);
+      return _sparse_2d_array.get(std::get<0>(index_pair), std::get<1>(index_pair), _zero);
     }
 
-    template<std::integral I, std::integral J>
-    decltype(auto) operator[](const std::tuple<I, J>& index_pair) noexcept
+    decltype(auto) operator[](const std::tuple<index_type, index_type>& index_pair) noexcept
     {
-      return Proxy(*this, std::get<0>(index_pair[0]), std::get<1>(index_pair[1]));
+      return Proxy(*this, std::get<0>(index_pair), std::get<1>(index_pair));
     }
 
     explicit RandomAccessibleSparseMatrix(const LATEL::sequential_access_matrix_concept auto& matrix):
