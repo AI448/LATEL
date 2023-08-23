@@ -26,12 +26,15 @@ private:
   struct AddRowIndex
   {
     DerivativeMatrixT::index_type i;
+
     decltype(auto) operator()(auto&& pair) const noexcept
     {
       return std::tuple<
-        typename DerivativeMatrixT::index_type, decltype(ACCBOOST2::get<0>(pair)), decltype(ACCBOOST2::get<1>(pair))
+        typename DerivativeMatrixT::index_type,
+        decltype(ACCBOOST2::get<0>(std::forward<decltype(pair)>(pair))),
+        decltype(ACCBOOST2::get<1>(std::forward<decltype(pair)>(pair)))
       >(
-        i, ACCBOOST2::get<0>(pair), ACCBOOST2::get<1>(pair)
+        i, ACCBOOST2::get<0>(std::forward<decltype(pair)>(pair)), ACCBOOST2::get<1>(std::forward<decltype(pair)>(pair))
       );
     }
   };
@@ -39,8 +42,9 @@ private:
   struct MakeRowRange
   {
     const RowMatrixRangePolicy* p;
-    decltype(auto) operator()(const auto&& i) const noexcept
+    decltype(auto) operator()(auto&& i) const noexcept
     {
+      assert(i < static_cast<const DerivativeMatrixT*>(p)->row_dimension());
       return ACCBOOST2::map(AddRowIndex{i}, static_cast<const DerivativeMatrixT*>(p)->row(i));
     }
   };

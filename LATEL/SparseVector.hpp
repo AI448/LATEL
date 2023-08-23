@@ -37,7 +37,7 @@ public:
   SparseVector(const SparseVector&) = default;
 
   /// 次元を指定して構築
-  explicit SparseVector(std::integral auto&& dimension):
+  explicit SparseVector(const std::integral auto& dimension):
     _indexes(), _position_values()
   {
     _indexes.reserve(dimension);
@@ -61,7 +61,7 @@ public:
 
   /// @brief 次元を指定してゼロクリア
   /// @param dimension 次元
-  void zero_clear(std::integral auto&& dimension)
+  void zero_clear(const std::integral auto& dimension)
   {
     assert(dimension <= std::numeric_limits<index_type>::max());
     for(auto&& i: _indexes){
@@ -85,7 +85,7 @@ public:
   /// @brief 
   /// @param index 
   /// @return 
-  decltype(auto) operator[](std::integral auto&& index) const noexcept
+  decltype(auto) operator[](const std::integral auto& index) const noexcept
   {
     assert(index < _position_values.size());
     return ACCBOOST2::get<1>(_position_values[index]);

@@ -1,7 +1,7 @@
 TESTS=test_SparseVector test_DenseVector \
 test_product_Scalar_Vector \
 test_CompressedMatrix test_BlockMatrix test_RandomAccessibleSparseMatrix \
-test_product_Permutator_Vector test_product_Matrix_Vector
+test_product_Permutator_Vector test_product_Matrix_Vector test_product_Permutator_Matrix
 # test_CoordinateMatrix test_CompressedMatrix  test_ScalarVectorProduction  \
 # test_transpose_matrix
 

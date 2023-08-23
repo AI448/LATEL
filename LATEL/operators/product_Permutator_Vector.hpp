@@ -44,7 +44,7 @@ public:
 
   decltype(auto) upper_of_nonzeros() const noexcept
   {
-    return std::min(_permutator.row_dimension(), _vector.upper_of_nonzeros());
+    return std::min<index_type>(_permutator.row_dimension(), _vector.upper_of_nonzeros());
   }
 
 private:

@@ -8,6 +8,7 @@
 #include "LATEL/UnitVector.hpp"
 
 #include "LATEL/MatrixView.hpp"
+#include "LATEL/CoordinateMatrix.hpp"
 #include "LATEL/CompressedMatrix.hpp"
 #include "LATEL/RandomAccessibleSparseMatrix.hpp"
 #include "LATEL/BlockMatrix.hpp"
@@ -20,6 +21,7 @@
 #include "LATEL/operators/product_Matrix_Vector.hpp"
 #include "LATEL/operators/transpose_Permutator.hpp"
 #include "LATEL/operators/product_Permutator_Vector.hpp"
+#include "LATEL/operators/product_Permutator_Matrix.hpp"
 
 
 #endif

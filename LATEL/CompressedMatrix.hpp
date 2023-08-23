@@ -104,6 +104,7 @@ public:
 
   decltype(auto) row(const std::integral auto& row_index) const noexcept
   {
+    assert(row_index + 1 < _positions.size());
     return LATEL::make_VectorView(_column_dimension, ACCBOOST2::slice(_positions[row_index], _positions[row_index + 1], _data));
   }
 
