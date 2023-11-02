@@ -106,6 +106,7 @@ public:
 template<LATEL::permutator_concept PermutatorType, LATEL::sequential_access_matrix_concept MatrixType>
 decltype(auto) operator*(PermutatorType&& permutator, MatrixType&& matrix)
 {
+  assert(permutator.column_dimension() == matrix.row_dimension());
   return _product_Permutator_Matrix::RowPermutatedMatrixView<PermutatorType, MatrixType>(std::forward<PermutatorType>(permutator), std::forward<MatrixType>(matrix));
 }
 
@@ -113,6 +114,7 @@ decltype(auto) operator*(PermutatorType&& permutator, MatrixType&& matrix)
 template<LATEL::sequential_access_matrix_concept MatrixType, LATEL::permutator_concept PermutatorType>
 decltype(auto) operator*(MatrixType&& matrix, PermutatorType&& permutator)
 {
+  assert(matrix.column_dimension() == permutator.row_dimension());
   return transpose(transpose(permutator) * transpose(matrix));
 }
 

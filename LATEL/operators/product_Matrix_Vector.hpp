@@ -161,7 +161,7 @@ public:
   void add_to(LHSVectorType& lhs_vector) const
   {
     if constexpr (LATEL::bidirectional_matrix_concept<MatrixType> && LATEL::random_access_vector_concept<VectorType>){
-      if(_vector.upper_of_nonzeros() >= _vector.dimsnion() / 2){
+      if(_vector.upper_of_nonzeros() >= _vector.dimension() / 2){
         add_to_as_row_matrix_and_dense_vector(lhs_vector);
       }else{
         add_to_as_column_matrix_and_sparse_vector(lhs_vector);
@@ -179,7 +179,7 @@ public:
   void subtract_from(LHSVectorType& lhs_vector) const
   {
     if constexpr (LATEL::bidirectional_matrix_concept<MatrixType> && LATEL::random_access_vector_concept<VectorType>){
-      if(_vector.upper_of_nonzeros() >= _vector.dimsnion() / 2){
+      if(_vector.upper_of_nonzeros() >= _vector.dimension() / 2){
         subtract_from_as_row_matrix_and_dense_vector(lhs_vector);
       }else{
         subtract_from_as_column_matrix_and_sparse_vector(lhs_vector);
@@ -204,6 +204,7 @@ template<LATEL::sequential_access_matrix_concept MatrixType, LATEL::sequential_a
 decltype(auto) operator*(MatrixType&& matrix, VectorType&& vector)
 {
   static_assert(LATEL::column_matrix_concept<MatrixType> || LATEL::random_access_vector_concept<VectorType>);
+  assert(matrix.column_dimension() == vector.dimension());
   return _product_Matrix_Vector::MatrixProductedVectorView<MatrixType, VectorType>(std::forward<MatrixType>(matrix), std::forward<VectorType>(vector));
 }
 

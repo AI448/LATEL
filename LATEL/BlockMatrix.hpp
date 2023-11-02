@@ -1,7 +1,6 @@
 #ifndef LATEL_BLOCKMATRIX_HPP_
 #define LATEL_BLOCKMATRIX_HPP_
 
-#include <iostream>
 #include "ACCBOOST2/container.hpp"
 #include "common.hpp"
 #include "MatixRangePolicy.hpp"
@@ -48,13 +47,11 @@ private:
     _data[Axis::ROW]._block_indices.clear();
     _data[Axis::ROW]._block_indices.resize(m, 0);
     _data[Axis::ROW]._positions.clear();
-    _data[Axis::ROW]._positions.resize((m + 1) * block_size[Axis::COLUMN], 0);
+    _data[Axis::ROW]._positions.resize(m * block_size[Axis::COLUMN] + 1, 0);
     _data[Axis::COLUMN]._block_indices.clear();
     _data[Axis::COLUMN]._block_indices.resize(n, 0);
     _data[Axis::COLUMN]._positions.clear();    
-    _data[Axis::COLUMN]._positions.resize((n + 1) * block_size[Axis::ROW], 0);
-    assert(_data[Axis::ROW]._positions.size() == (m + 1) * block_size[Axis::COLUMN]);
-    assert(_data[Axis::COLUMN]._positions.size() == (n + 1) * block_size[Axis::ROW]);
+    _data[Axis::COLUMN]._positions.resize(n * block_size[Axis::ROW] + 1, 0);
 
     std::size_t size = 0;
     // 行・列データの開始位置を算出
@@ -98,13 +95,15 @@ private:
       _data[Axis::ROW]._positions[(i + 1) * block_size[Axis::COLUMN]] += 1;
       _data[Axis::COLUMN]._positions[(j + 1) * block_size[Axis::ROW]] += 1;
     }
+    assert(_data[Axis::ROW]._positions[m * block_size[Axis::COLUMN]] == size);
+    assert(_data[Axis::COLUMN]._positions[n * block_size[Axis::ROW]] == size);
     for(auto&& i: ACCBOOST2::range(m)){
-      for(auto&& k: ACCBOOST2::range(1, block_size[Axis::ROW])){
+      for(auto&& k: ACCBOOST2::range(1, block_size[Axis::COLUMN])){
         _data[Axis::ROW]._positions[i * block_size[Axis::COLUMN] + k] = _data[Axis::ROW]._positions[(i + 1) * block_size[Axis::COLUMN]];
       }
     }
     for(auto&& j: ACCBOOST2::range(n)){
-      for(auto&& l: ACCBOOST2::range(1, block_size[Axis::COLUMN])){
+      for(auto&& l: ACCBOOST2::range(1, block_size[Axis::ROW])){
         _data[Axis::COLUMN]._positions[j * block_size[Axis::ROW] + l] = _data[Axis::COLUMN]._positions[(j + 1) * block_size[Axis::ROW]];
       }
     }
@@ -174,7 +173,7 @@ public:
 private:
 
   template<Axis A>
-  decltype(auto) dimension() const noexcept
+  index_type dimension() const noexcept
   {
     return _data[A]._block_indices.size();
   }
@@ -199,7 +198,7 @@ private:
     auto first_position = (_data[A]._positions.size() != 0 ? _data[A]._positions[index * _data[1 - A]._block_size] : 0);
     auto last_position = (_data[A]._positions.size() != 0 ? _data[A]._positions[(index + 1) * _data[1 - A]._block_size] : 0);
     return LATEL::make_VectorView(
-      dimension<A>(),
+      dimension<Axis(1 - A)>(),
       ACCBOOST2::map(
         [&](auto&& p) -> decltype(auto)
         {
@@ -245,11 +244,13 @@ public:
     auto minor_axis = 1 - A;
     std::array<index_type, 2> block_size = {_data[Axis::ROW]._block_size, _data[Axis::COLUMN]._block_size};
     index_type major_index = index;
+    assert(index < dimension<A>());
     assert(block_index < block_size[major_axis]);
+
     if(block_index > _data[major_axis]._block_indices[major_index]){
       for(auto&& major_position: ACCBOOST2::range(
-        _data[major_axis]._positions[index * block_size[minor_axis]],
-        _data[major_axis]._positions[(index + 1) * block_size[minor_axis]]
+        _data[major_axis]._positions[major_index * block_size[minor_axis]],
+        _data[major_axis]._positions[(major_index + 1) * block_size[minor_axis]]
       )){
         assert(major_position < _data[major_axis]._another_positions.size());
         auto&& minor_position = _data[major_axis]._another_positions[major_position];
@@ -260,10 +261,18 @@ public:
         // minor_axis 方向のデータの移動
         value_type minor_value = _data[minor_axis]._values[minor_position];
         auto p = minor_position;
+        // for(auto k = 0U; k < _data[major_axis]._block_size; ++k){
+        //   std::cerr << _data[minor_axis]._positions[minor_index * block_size[major_axis] + k] << ", ";
+        // }
+        // std::cerr << std::endl;
         for(auto k = _data[major_axis]._block_indices[major_index]; k < block_index; ++k){
+          assert(_data[minor_axis]._positions[minor_index * block_size[major_axis] + k] <= p);
           // k 番目のブロックの末尾位置を取得
           auto q = _data[minor_axis]._positions[minor_index * block_size[major_axis] + k + 1] - 1;
           assert(p <= q);
+          assert(q < _data[minor_axis]._indices.size());
+          assert(q < _data[minor_axis]._values.size());
+          assert(q < _data[minor_axis]._another_positions.size());
           if(p != q){
             // q のデータを p に移動
             auto& r = _data[major_axis]._another_positions[_data[minor_axis]._another_positions[q]];
@@ -382,19 +391,23 @@ public:
     template<Axis A>
     decltype(auto) vector(const index_type& index) const noexcept
     {
+      assert(index < _block_matrix.dimension<A>());
       std::array<index_type, 2> block_size = {_block_matrix._data[Axis::ROW]._block_size, _block_matrix._data[Axis::COLUMN]._block_size};
       auto first_position = (
         _block_index[A] == _block_matrix._data[A]._block_indices[index]
         ? _block_matrix._data[A]._positions[index * block_size[1 - A] + _block_index[1 - A]]
         : 0
       );
+      assert(first_position <= _block_matrix._data[A]._indices.size());
       auto last_position = (
         _block_index[A] == _block_matrix._data[A]._block_indices[index]
         ? _block_matrix._data[A]._positions[index * block_size[1 - A] + _block_index[1 - A] + 1]
         : 0
       );
+      assert(last_position <= _block_matrix._data[A]._indices.size());
+      assert(first_position <= last_position);
       return LATEL::VectorView(
-        _block_matrix. template dimension<A>(),
+        _block_matrix. template dimension<static_cast<Axis>(1 - A)>(),
         ACCBOOST2::map(
           [&](auto&& p) -> decltype(auto)
           {

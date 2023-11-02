@@ -61,7 +61,7 @@ public:
 
   /// @brief 次元を指定してゼロクリア
   /// @param dimension 次元
-  void zero_clear(const std::integral auto& dimension)
+  void zero_clear(const std::unsigned_integral auto& dimension)
   {
     assert(dimension <= std::numeric_limits<index_type>::max());
     for(auto&& i: _indexes){

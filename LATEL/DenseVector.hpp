@@ -33,7 +33,7 @@ public:
   DenseVector(DenseVector&&) = default;
   DenseVector(const DenseVector&) = default;
 
-  explicit DenseVector(const std::integral auto& dimension, const value_type& initial_value = value_type(0)):
+  explicit DenseVector(const std::unsigned_integral auto& dimension, const value_type& initial_value = value_type(0)):
     _values(dimension, initial_value)
   {
     assert(dimension <= std::numeric_limits<index_type>::max());
@@ -50,6 +50,11 @@ public:
   decltype(auto) upper_of_nonzeros() const noexcept
   {
     return _values.size();
+  }
+
+  decltype(auto) values() const noexcept
+  {
+    return (_values);
   }
 
   void zero_clear(const std::integral auto& dimension)

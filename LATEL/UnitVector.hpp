@@ -37,7 +37,7 @@ public:
 
   decltype(auto) dimension() const noexcept
   {
-    return _dimension;
+    return (_dimension);
   }
 
   decltype(auto) upper_of_nonzeros() const noexcept

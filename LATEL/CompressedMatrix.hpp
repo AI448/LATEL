@@ -89,7 +89,8 @@ public:
   template<LATEL::sequential_access_matrix_concept M>
   CompressedRowMatrix& operator=(const M& other)
   {
-    return operator=(CompressedRowMatrix(other));
+    assign(other);
+    return *this;
   }
 
   decltype(auto) row_dimension() const noexcept
@@ -99,7 +100,7 @@ public:
 
   decltype(auto) column_dimension() const noexcept
   {
-    return _column_dimension;
+    return (_column_dimension);
   }
 
   decltype(auto) row(const std::integral auto& row_index) const noexcept

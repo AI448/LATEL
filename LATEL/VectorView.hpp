@@ -38,7 +38,7 @@ public:
 
   decltype(auto) dimension() const noexcept
   {
-    return _dimension;
+    return (_dimension);
   }
 
   decltype(auto) upper_of_nonzeros() const noexcept
@@ -46,7 +46,7 @@ public:
     if constexpr (std::ranges::random_access_range<RangeType>){
       return index_type(_range.end() - _range.begin());
     }else{
-      return _dimension;
+      return (_dimension);
     }
   }
 

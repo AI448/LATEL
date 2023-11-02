@@ -41,12 +41,12 @@ public:
 
   decltype(auto) row_dimension() const noexcept
   {
-    return _row_dimension;
+    return (_row_dimension);
   }
 
   decltype(auto) column_dimension() const noexcept
   {
-    return _column_dimension;
+    return (_column_dimension);
   }
 
   decltype(auto) begin() const noexcept
