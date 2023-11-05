@@ -248,6 +248,18 @@ public:
     return *this;
   }
 
+  SparseVector& operator+=(const lazy_evaluation_vector_concept auto& vector)
+  {
+    vector.add_to(*this);
+    return *this;
+  }
+
+  SparseVector& operator-=(const lazy_evaluation_vector_concept auto& vector)
+  {
+    vector.subtract_from(*this);
+    return *this;
+  }
+
 };
 
 
