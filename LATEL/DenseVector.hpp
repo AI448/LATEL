@@ -85,12 +85,22 @@ public:
 
   decltype(auto) begin() const noexcept
   {
-    return ACCBOOST2::make_random_access_enumerate_iterator(0, _values.begin());
+    return ACCBOOST2::make_random_access_enumerate_iterator(static_cast<index_type>(0), _values.begin());
   }
 
   decltype(auto) end() const noexcept
   {
-    return ACCBOOST2::make_random_access_enumerate_iterator(_values.size(), _values.end());
+    return ACCBOOST2::make_random_access_enumerate_iterator(static_cast<index_type>(_values.size()), _values.end());
+  }
+
+  decltype(auto) begin() noexcept
+  {
+    return ACCBOOST2::make_random_access_enumerate_iterator(static_cast<index_type>(0), _values.begin());
+  }
+
+  decltype(auto) end() noexcept
+  {
+    return ACCBOOST2::make_random_access_enumerate_iterator(static_cast<index_type>(_values.size()), _values.end());
   }
 
   explicit DenseVector(const sequential_access_vector_concept auto& vector):
@@ -101,7 +111,7 @@ public:
 
   DenseVector& operator=(const sequential_access_vector_concept auto& vector)
   {
-    _values.resize(vector.dimension(), 0);
+    zero_clear(vector.dimension());
     {
       auto&& p = _values.begin();
       for(auto&& [i, x]: vector){
