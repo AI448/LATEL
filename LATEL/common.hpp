@@ -2,6 +2,7 @@
 #define LATEL_COMMON_HPP_
 
 
+#include <cmath>
 #include <limits>
 #include "ACCBOOST2/utility.hpp"
 #include "ACCBOOST2/IO.hpp"
