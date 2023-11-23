@@ -128,7 +128,7 @@ private:
       if(value_reference != 0) [[likely]] {\
         if(flag_reference == false){\
           flag_reference = true;\
-          _sparse_vector._indexes.push_back_without_allocation(_index);\
+          _sparse_vector._indices.push_back_without_allocation(_index);\
         }\
       }\
       return *this;\
