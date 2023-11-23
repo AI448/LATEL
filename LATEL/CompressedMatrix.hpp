@@ -103,10 +103,18 @@ public:
     return (_column_dimension);
   }
 
+  decltype(auto) number_of_nonzeros() const noexcept
+  {
+    return _data.size();
+  }
+
   decltype(auto) row(const std::integral auto& row_index) const noexcept
   {
     assert(row_index + 1 < _positions.size());
-    return LATEL::make_VectorView(_column_dimension, ACCBOOST2::slice(_positions[row_index], _positions[row_index + 1], _data));
+    return LATEL::make_VectorView(
+      _column_dimension,
+      ACCBOOST2::range(_data.begin() + _positions[row_index], _data.begin() + _positions[row_index + 1])
+    );
   }
 
 };
@@ -154,6 +162,11 @@ public:
   decltype(auto) column_dimension() const noexcept
   {
     return _row_matrix.row_dimension();
+  }
+
+  decltype(auto) number_of_nonzeros() const noexcept
+  {
+    return _row_matrix.number_of_nonzeros();
   }
 
   decltype(auto) column(const std::integral auto& column_index) const noexcept
@@ -208,6 +221,11 @@ public:
   decltype(auto) column_dimension() const noexcept
   {
     return _row_matrix.column_dimension();
+  }
+
+  decltype(auto) number_of_nonzeros() const noexcept
+  {
+    return _row_matrix.number_of_nonzeros();
   }
 
   decltype(auto) row(const std::integral auto& row_index) const noexcept

@@ -34,7 +34,7 @@ private:
 
   std::array<Data, 2> _data;
 
-  void assign(const sequential_access_matrix_concept auto& matrix)
+  ACCBOOST2_NOINLINE void assign(const sequential_access_matrix_concept auto& matrix)
   {
     std::array<index_type, 2> block_size = {_data[Axis::ROW]._block_size, _data[Axis::COLUMN]._block_size};
     auto m = matrix.row_dimension();
@@ -195,14 +195,15 @@ private:
   template<Axis A>
   decltype(auto) vector(const std::integral auto& index) const noexcept
   {
-    auto first_position = (_data[A]._positions.size() != 0 ? _data[A]._positions[index * _data[1 - A]._block_size] : 0);
-    auto last_position = (_data[A]._positions.size() != 0 ? _data[A]._positions[(index + 1) * _data[1 - A]._block_size] : 0);
+    assert((index + 1) * _data[1 - A]._block_size < _data[A]._positions.size());
+    auto first_position = _data[A]._positions[index * _data[1 - A]._block_size];
+    auto last_position = _data[A]._positions[(index + 1) * _data[1 - A]._block_size];
     return LATEL::make_VectorView(
       dimension<Axis(1 - A)>(),
       ACCBOOST2::map(
-        [&](auto&& p) -> decltype(auto)
+        [indices = _data[A]._indices.begin(), values=_data[A]._values.begin()](auto&& p) -> decltype(auto)
         {
-          return std::forward_as_tuple(_data[A]._indices[p], _data[A]._values[p]);
+          return std::forward_as_tuple(indices[p], values[p]);
         },
         ACCBOOST2::range(first_position, last_position)
       )
@@ -238,7 +239,7 @@ public:
   }
 
   template<Axis A>
-  void set_block_index(const std::integral auto& index, const std::integral auto& block_index)
+  ACCBOOST2_NOINLINE void set_block_index(const std::integral auto& index, const std::integral auto& block_index)
   {
     auto major_axis = A;
     auto minor_axis = 1 - A;
@@ -261,10 +262,6 @@ public:
         // minor_axis 方向のデータの移動
         value_type minor_value = _data[minor_axis]._values[minor_position];
         auto p = minor_position;
-        // for(auto k = 0U; k < _data[major_axis]._block_size; ++k){
-        //   std::cerr << _data[minor_axis]._positions[minor_index * block_size[major_axis] + k] << ", ";
-        // }
-        // std::cerr << std::endl;
         for(auto k = _data[major_axis]._block_indices[major_index]; k < block_index; ++k){
           assert(_data[minor_axis]._positions[minor_index * block_size[major_axis] + k] <= p);
           // k 番目のブロックの末尾位置を取得
@@ -393,25 +390,21 @@ public:
     {
       assert(index < _block_matrix.dimension<A>());
       std::array<index_type, 2> block_size = {_block_matrix._data[Axis::ROW]._block_size, _block_matrix._data[Axis::COLUMN]._block_size};
-      auto first_position = (
-        _block_index[A] == _block_matrix._data[A]._block_indices[index]
-        ? _block_matrix._data[A]._positions[index * block_size[1 - A] + _block_index[1 - A]]
-        : 0
-      );
-      assert(first_position <= _block_matrix._data[A]._indices.size());
-      auto last_position = (
-        _block_index[A] == _block_matrix._data[A]._block_indices[index]
-        ? _block_matrix._data[A]._positions[index * block_size[1 - A] + _block_index[1 - A] + 1]
-        : 0
-      );
+      std::size_t first_position = 0;
+      std::size_t last_position = 0;
+      if(_block_index[A] == _block_matrix._data[A]._block_indices[index]){
+        auto k = index * block_size[1 - A] + _block_index[1 - A];
+        first_position = _block_matrix._data[A]._positions[k];
+        last_position = _block_matrix._data[A]._positions[k + 1];
+      }
       assert(last_position <= _block_matrix._data[A]._indices.size());
       assert(first_position <= last_position);
       return LATEL::VectorView(
         _block_matrix. template dimension<static_cast<Axis>(1 - A)>(),
         ACCBOOST2::map(
-          [&](auto&& p) -> decltype(auto)
+          [indices=_block_matrix._data[A]._indices.begin(), values=_block_matrix._data[A]._values.begin()](auto&& p) -> decltype(auto)
           {
-            return std::forward_as_tuple(_block_matrix._data[A]._indices[p], _block_matrix._data[A]._values[p]);
+            return std::forward_as_tuple(indices[p], values[p]);
           },
           ACCBOOST2::range(first_position, last_position)
         )

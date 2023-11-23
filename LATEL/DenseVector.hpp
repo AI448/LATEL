@@ -64,7 +64,7 @@ public:
     _values.resize(dimension, value_type(0));
   }
 
-  void zero_clear() noexcept(std::is_nothrow_assignable_v<ValueType>)
+  void zero_clear() noexcept(std::is_nothrow_assignable_v<ValueType, int>)
   {
     for(auto& x: _values){
       x = 0;

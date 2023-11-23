@@ -65,6 +65,16 @@ namespace LATEL
       return _sparse_2d_array.column_size();
     }
 
+    void clear_row(const std::unsigned_integral auto& i) noexcept
+    {
+      _sparse_2d_array.clear_row(i);
+    }
+
+    void clear_column(const std::unsigned_integral auto& j) noexcept
+    {
+      _sparse_2d_array.clear_column(j);
+    }
+
   private:
 
     template<Axis A>
@@ -207,7 +217,7 @@ namespace LATEL
       )
       Proxy& operator=(V&& rhs)
       {
-        if(rhs != _zero){
+        if(rhs != _zero) [[likely]] {
           _matrix._sparse_2d_array.emplace(_row_index, _column_index, std::forward<V>(rhs));
         }else{
           _matrix._sparse_2d_array.erase(_row_index, _column_index);

@@ -59,7 +59,7 @@ public:
 private:
 
   template<class LHSVectorType>
-  void add_to_as_row_matrix_and_dense_vector(LHSVectorType& lhs_vector) const
+  ACCBOOST2_NOINLINE void add_to_as_row_matrix_and_dense_vector(LHSVectorType& lhs_vector) const
   {
     assert(lhs_vector.dimension() == _matrix.row_dimension());
     for(auto&& i: ACCBOOST2::range(_matrix.row_dimension())){
@@ -68,7 +68,7 @@ private:
   }
 
   template<class LHSVectorType>
-  void add_to_as_column_matrix_and_sparse_vector(LHSVectorType& lhs_vector) const
+  ACCBOOST2_NOINLINE void add_to_as_column_matrix_and_sparse_vector(LHSVectorType& lhs_vector) const
   {
     assert(lhs_vector.dimension() == _matrix.row_dimension());
     for(auto&& [j, v]: _vector){
@@ -78,7 +78,7 @@ private:
   }
 
   template<class LHSVectorType>
-  void add_to_as_coordinate_matrix_and_dense_vector(LHSVectorType& lhs_vector) const
+  ACCBOOST2_NOINLINE void add_to_as_coordinate_matrix_and_dense_vector(LHSVectorType& lhs_vector) const
   {
     assert(lhs_vector.dimension() == _matrix.row_dimension());
     for(auto&& [i, j, a]: _matrix){
@@ -87,7 +87,7 @@ private:
   }
 
   template<class LHSVectorType>
-  void subtract_from_as_row_matrix_and_dense_vector(LHSVectorType& lhs_vector) const
+  ACCBOOST2_NOINLINE void subtract_from_as_row_matrix_and_dense_vector(LHSVectorType& lhs_vector) const
   {
     assert(lhs_vector.dimension() == _matrix.row_dimension());
     for(auto&& i: ACCBOOST2::range(_matrix.row_dimension())){
@@ -96,7 +96,7 @@ private:
   }
 
   template<class LHSVectorType>
-  void subtract_from_as_column_matrix_and_sparse_vector(LHSVectorType& lhs_vector) const
+  ACCBOOST2_NOINLINE void subtract_from_as_column_matrix_and_sparse_vector(LHSVectorType& lhs_vector) const
   {
     assert(lhs_vector.dimension() == _matrix.row_dimension());
     for(auto&& [j, v]: _vector){
@@ -106,7 +106,7 @@ private:
   }
 
   template<class LHSVectorType>
-  void subtract_from_as_coordinate_matrix_and_dense_vector(LHSVectorType& lhs_vector) const
+  ACCBOOST2_NOINLINE void subtract_from_as_coordinate_matrix_and_dense_vector(LHSVectorType& lhs_vector) const
   {
     assert(lhs_vector.dimension() == _matrix.row_dimension());
     for(auto&& [i, j, a]: _matrix){
@@ -115,7 +115,7 @@ private:
   }
 
   template<class LHSVectorType>
-  void assign_to_as_row_matrix_and_dense_vector(LHSVectorType& lhs_vector) const
+  ACCBOOST2_NOINLINE void assign_to_as_row_matrix_and_dense_vector(LHSVectorType& lhs_vector) const
   {
     lhs_vector.zero_clear(_matrix.row_dimension());
     for(auto&& i: ACCBOOST2::range(_matrix.row_dimension())){
@@ -199,13 +199,15 @@ public:
 }
 
 
-
 template<LATEL::sequential_access_matrix_concept MatrixType, LATEL::sequential_access_vector_concept VectorType>
 decltype(auto) operator*(MatrixType&& matrix, VectorType&& vector)
 {
   static_assert(LATEL::column_matrix_concept<MatrixType> || LATEL::random_access_vector_concept<VectorType>);
   assert(matrix.column_dimension() == vector.dimension());
-  return _product_Matrix_Vector::MatrixProductedVectorView<MatrixType, VectorType>(std::forward<MatrixType>(matrix), std::forward<VectorType>(vector));
+  // 左辺値参照型であれば const をつける
+  using M = std::conditional_t<std::is_lvalue_reference_v<MatrixType>, const std::remove_reference_t<MatrixType>&, MatrixType>;
+  using V = std::conditional_t<std::is_lvalue_reference_v<VectorType>, const std::remove_reference_t<VectorType>&, VectorType>;
+  return _product_Matrix_Vector::MatrixProductedVectorView<M, V>(std::forward<MatrixType>(matrix), std::forward<VectorType>(vector));
 }
 
 

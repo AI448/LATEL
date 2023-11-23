@@ -21,7 +21,8 @@ decltype(auto) operator*(const LHSVectorType& lhs_vector, const RHSVectorType& r
   >;
   result_type result = 0;
   for(auto&& [i, r]: rhs_vector){
-    result += lhs_vector[i] * r;
+//    result += lhs_vector[i] * r;    
+    result = std::fma(lhs_vector[i], r, result);
   }
   return result;
 }
@@ -39,7 +40,8 @@ decltype(auto) operator*(const LHSVectorType& lhs_vector, const RHSVectorType& r
   >;
   result_type result = 0;
   for(auto&& [i, l]: lhs_vector){
-    result += l * rhs_vector[i];
+    // result += l * rhs_vector[i];
+    result = std::fma(l, rhs_vector[i], result);
   }
   return result;
 }
@@ -55,11 +57,13 @@ decltype(auto) operator*(const LHSVectorType& lhs_vector, const RHSVectorType& r
   result_type result = 0;
   if(lhs_vector.upper_of_nonzeros() <= rhs_vector.upper_of_nonzeros()){
     for(auto&& [i, l]: lhs_vector){
-      result += l * rhs_vector[i];
+      // result += l * rhs_vector[i];
+      result = std::fma(l, rhs_vector[i], result);
     }
   }else{
     for(auto&& [i, r]: rhs_vector){
-      result += lhs_vector[i] * r;
+      // result += lhs_vector[i] * r;
+      result = std::fma(lhs_vector[i], r, result);      
     }
   }
   return result;

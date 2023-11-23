@@ -20,6 +20,7 @@
 #include "LATEL/operators/map_Vector.hpp"
 #include "LATEL/operators/filter_Matrix.hpp"
 #include "LATEL/operators/norm.hpp"
+#include "LATEL/operators/drop_Vector.hpp"
 #include "LATEL/operators/product_Scalar_Vector.hpp"
 #include "LATEL/operators/product_Vectors.hpp"
 #include "LATEL/operators/transpose_Matrix.hpp"
